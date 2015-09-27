@@ -1,5 +1,6 @@
 #include <fstream>
 #include <functional>
+#include <stdio.h>
 
 #include "OpenGL.h"
 #include "Combiner.h"
@@ -320,12 +321,13 @@ void CombinerInfo::updateParameters(OGLRender::RENDER_STATE _renderState)
 		m_pUniformCollection->updateUniforms(m_pCurrent, _renderState);
 }
 
+#ifndef GLES2
 static
 void getStorageFileName(wchar_t * _fileName)
 {
 	wchar_t strIniFolderPath[PLUGIN_PATH_SIZE];
 	api().GetUserCachePath(strIniFolderPath);
-	wsprintf(_fileName, L"%ls/GLideN64.%08lx.shaders", strIniFolderPath, config.generalEmulation.shaderStorage == Config::ssUseOneCommon ? 0 : std::hash<std::string>()(RSP.romname));
+	swprintf(_fileName, PLUGIN_PATH_SIZE, L"%ls/GLideN64.%08lx.shaders", strIniFolderPath, config.generalEmulation.shaderStorage == Config::ssUseOneCommon ? 0 : std::hash<std::string>()(RSP.romname));
 }
 
 /*
@@ -347,7 +349,13 @@ void CombinerInfo::_saveCombinersCache() const
 	wchar_t fileName[PLUGIN_PATH_SIZE];
 	getStorageFileName(fileName);
 
+#ifdef OS_WINDOWS
 	std::ofstream fout(fileName, std::ofstream::binary | std::ofstream::trunc);
+#else
+	char fileName_c[PATH_MAX];
+	wcstombs(fileName_c, fileName, PATH_MAX);
+	std::ofstream fout(fileName_c, std::ofstream::binary | std::ofstream::trunc);
+#endif
 	if (!fout)
 		return;
 
@@ -375,7 +383,13 @@ bool CombinerInfo::_loadCombinersCache()
 	wchar_t fileName[PLUGIN_PATH_SIZE];
 	getStorageFileName(fileName);
 
+#ifdef OS_WINDOWS
 	std::ifstream fin(fileName, std::ofstream::binary);
+#else
+	char fileName_c[PATH_MAX];
+	wcstombs(fileName_c, fileName, PATH_MAX);
+	std::ifstream fin(fileName_c, std::ofstream::binary);
+#endif
 	if (!fin)
 		return false;
 
@@ -412,3 +426,12 @@ bool CombinerInfo::_loadCombinersCache()
 	fin.close();
 	return !isGLError();
 }
+#else // GLES2
+void CombinerInfo::_saveCombinersCache() const
+{}
+
+bool CombinerInfo::_loadCombinersCache()
+{
+	return true;
+}
+#endif //GLES2
