@@ -383,6 +383,7 @@ void CombinerInfo::_saveCombinersCache() const
 	fout.write((char*)&len, sizeof(len));
 	for (Combiners::const_iterator cur = m_combiners.begin(); cur != m_combiners.end(); ++cur)
 		fout << *(cur->second);
+	fout.flush();
 	fout.close();
 }
 
