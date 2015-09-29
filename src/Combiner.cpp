@@ -1,6 +1,7 @@
 #include <fstream>
 #include <functional>
 #include <stdio.h>
+#include <osal_files.h>
 
 #include "OpenGL.h"
 #include "Combiner.h"
@@ -325,9 +326,16 @@ void CombinerInfo::updateParameters(OGLRender::RENDER_STATE _renderState)
 static
 void getStorageFileName(wchar_t * _fileName)
 {
-	wchar_t strIniFolderPath[PLUGIN_PATH_SIZE];
-	api().GetUserCachePath(strIniFolderPath);
-	swprintf(_fileName, PLUGIN_PATH_SIZE, L"%ls/GLideN64.%08lx.shaders", strIniFolderPath, config.generalEmulation.shaderStorage == Config::ssUseOneCommon ? 0 : std::hash<std::string>()(RSP.romname));
+	wchar_t strCacheFolderPath[PLUGIN_PATH_SIZE];
+	api().GetUserCachePath(strCacheFolderPath);
+	wchar_t strShaderFolderPath[PLUGIN_PATH_SIZE];
+	swprintf(strShaderFolderPath, PLUGIN_PATH_SIZE, L"%ls/%ls", strCacheFolderPath, L"Shaders");
+	wchar_t * pPath = strShaderFolderPath;
+	if (!osal_path_existsW(strShaderFolderPath) || !osal_is_directory(strShaderFolderPath)) {
+		if (osal_mkdirp(strShaderFolderPath) != 0)
+			pPath = strCacheFolderPath;
+	}
+	swprintf(_fileName, PLUGIN_PATH_SIZE, L"%ls/GLideN64.%08lx.shaders", pPath, config.generalEmulation.shaderStorage == Config::ssUseOneCommon ? 0 : std::hash<std::string>()(RSP.romname));
 }
 
 /*
