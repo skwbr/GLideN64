@@ -30,7 +30,7 @@
 
 #include "TxTexCache.h"
 #include "TxDbg.h"
-#include "osal_files.h"
+#include <osal_files.h>
 #include <zlib.h>
 
 TxTexCache::~TxTexCache()
@@ -39,6 +39,7 @@ TxTexCache::~TxTexCache()
 	if (_options & DUMP_TEXCACHE) {
 		/* dump cache to disk */
 		tx_wstring filename = _ident + wst("_MEMORYCACHE.") + TEXCACHE_EXT;
+		removeColon(filename);
 		tx_wstring cachepath(_path);
 		cachepath += OSAL_DIR_SEPARATOR_STR;
 		cachepath += wst("cache");
@@ -61,6 +62,7 @@ TxTexCache::TxTexCache(int options, int cachesize, const wchar_t *path, const wc
 	if (_options & DUMP_TEXCACHE) {
 		/* find it on disk */
 		tx_wstring filename = _ident + wst("_MEMORYCACHE.") + TEXCACHE_EXT;
+		removeColon(filename);
 		tx_wstring cachepath(_path);
 		cachepath += OSAL_DIR_SEPARATOR_STR;
 		cachepath += wst("cache");

@@ -4,11 +4,7 @@
 #include <string>
 #include "Types.h"
 
-#define CONFIG_VERSION_ONE 1U
-#define CONFIG_VERSION_TWO 2U
-#define CONFIG_VERSION_THREE 3U
-#define CONFIG_VERSION_FOUR 4U		// Remove ValidityCheckMethod setting
-#define CONFIG_VERSION_CURRENT CONFIG_VERSION_FOUR
+#define CONFIG_VERSION_CURRENT 18U
 
 #define BILINEAR_3POINT   0
 #define BILINEAR_STANDARD 1
@@ -21,6 +17,12 @@ struct Config
 
 	std::string translationFile;
 
+	enum CropMode {
+		cmDisable = 0,
+		cmAuto,
+		cmCustom
+	};
+
 	struct
 	{
 		u32 fullscreen;
@@ -28,6 +30,9 @@ struct Config
 		u32 fullscreenWidth, fullscreenHeight, fullscreenRefresh;
 		u32 multisampling;
 		u32 verticalSync;
+		u32 cropMode;
+		u32 cropWidth;
+		u32 cropHeight;
 	} video;
 
 	struct
@@ -39,14 +44,25 @@ struct Config
 		u32 screenShotFormat;
 	} texture;
 
+	enum TexrectCorrectionMode {
+		tcDisable = 0,
+		tcSmart,
+		tcForce
+	};
+
 	struct {
-		u32 enableFog;
 		u32 enableNoise;
 		u32 enableLOD;
 		u32 enableHWLighting;
 		u32 enableCustomSettings;
+		u32 enableShadersStorage;
+		u32 correctTexrectCoords;
+		u32 enableNativeResTexrects;
+		u32 enableLegacyBlending;
+		u32 enableFragmentDepthWrite;
+		u32 enableBlitScreenWorkaround;
 		u32 hacks;
-#ifdef ANDROID
+#ifdef OS_ANDROID
 		u32 forcePolygonOffset;
 		f32 polygonOffsetFactor;
 		f32 polygonOffsetUnits;
@@ -61,20 +77,48 @@ struct Config
 		aTotal = 4
 	};
 
+	enum CopyToRDRAM {
+		ctDisable = 0,
+		ctSync,
+		ctAsync
+	};
+
+	enum BufferSwapMode {
+		bsOnVerticalInterrupt = 0,
+		bsOnVIOriginChange,
+		bsOnColorImageChange
+	};
+
+	enum CopyDepthMode {
+		cdDisable = 0,
+		cdCopyFromVRam = 1,
+		cdSoftwareRender = 2
+	};
+
 	struct {
 		u32 enable;
+		u32 aspect; // 0: stretch ; 1: 4/3 ; 2: 16/9; 3: adjust
+		u32 bufferSwapMode; // 0: on VI update call; 1: on VI origin change; 2: on main frame buffer update
+		u32 nativeResFactor;
+		u32 N64DepthCompare;
+		u32 copyAuxToRDRAM;
+		// Buffer read/write
 		u32 copyToRDRAM;
 		u32 copyDepthToRDRAM;
 		u32 copyFromRDRAM;
-		u32 detectCFB;
-		u32 N64DepthCompare;
-		u32 aspect; // 0: stretch ; 1: 4/3 ; 2: 16/9; 3: adjust
+
+		// FBInfo
+		u32 fbInfoSupported;
+		u32 fbInfoDisabled;
+		u32 fbInfoReadColorChunk;
+		u32 fbInfoReadDepthChunk;
 	} frameBufferEmulation;
 
 	struct
 	{
 		u32 txFilterMode;				// Texture filtering mode, eg Sharpen
 		u32 txEnhancementMode;			// Texture enhancement mode, eg 2xSAI
+		u32 txDeposterize;				// Deposterize texture before enhancement
 		u32 txFilterIgnoreBG;			// Do not apply filtering to backgrounds textures
 		u32 txCacheSize;				// Cache size in Mbytes
 
@@ -99,12 +143,31 @@ struct Config
 	} font;
 
 	struct {
-		u32 enable;
-		u32 thresholdLevel;
-		u32 blendMode;
-		u32 blurAmount;
-		u32 blurStrength;
-	} bloomFilter;
+		u32 force;
+		f32 level;
+	} gammaCorrection;
+
+	enum CountersPosition {
+		posTopLeft = 1,
+		posTopCenter = 2,
+		posTopRight = 4,
+		posTop = posTopLeft | posTopCenter | posTopRight,
+		posBottomLeft = 8,
+		posBottomCenter = 16,
+		posBottomRight = 32,
+		posBottom = posBottomLeft | posBottomCenter | posBottomRight
+	};
+
+	struct {
+		u32 vis;
+		u32 fps;
+		u32 percent;
+		u32 pos;
+	} onScreenDisplay;
+
+	struct {
+		u32 dumpMode;
+	} debug;
 
 	void resetToDefaults();
 };
@@ -114,14 +177,21 @@ struct Config
 #define hack_blurPauseScreen		(1<<2)  //Game copies frame buffer to depth buffer area, CPU blurs it. That image is used as background for pause screen.
 #define hack_scoreboard				(1<<3)  //Copy data from RDRAM to auxilary frame buffer. Scoreboard in Mario Tennis.
 #define hack_scoreboardJ			(1<<4)  //Copy data from RDRAM to auxilary frame buffer. Scoreboard in Mario Tennis (J).
-#define hack_pilotWings				(1<<5)  //Special blend mode for PilotWings.
+#define hack_texrect_shade_alpha	(1<<5)  //Set vertex alpha to 1 when texrect alpha combiner uses shade. Pokemon Stadium 2
 #define hack_subscreen				(1<<6)  //Fix subscreen delay in Zelda OOT and Doubutsu no Mori
-#define hack_legoRacers				(1<<7)  //LEGO racers course map
-#define hack_blastCorps				(1<<8)  //Blast Corps black polygons
-#define hack_ignoreVIHeightChange	(1<<9)  //Do not reset FBO when VI height is changed. Space Invaders need it.
-#define hack_VIUpdateOnCIChange		(1<<10) //Update frame if color buffer changed. Needed for Quake II underwater.
-#define hack_skipVIChangeCheck		(1<<11) //Don't reset FBO when VI parameters changed. Zelda MM
-#define hack_ZeldaCamera			(1<<12) //Special hack to detect and process Zelda MM camera.
+#define hack_blastCorps				(1<<7)  //Blast Corps black polygons
+#define hack_Infloop				(1<<8) //Gauntlet Legends yielding
+#define hack_rectDepthBufferCopyPD	(1<<9)  //Copy depth buffer only when game need it. Optimized for PD
+#define hack_rectDepthBufferCopyCBFD (1<<10) //Copy depth buffer only when game need it. Optimized for CBFD
+#define hack_WinBack				(1<<11) //Hack for WinBack to remove gray rectangle in HLE mode
+#define hack_ZeldaMM				(1<<12) //Special hacks for Zelda MM
+#define hack_ModifyVertexXyInShader	(1<<13) //Pass screen coordinates provided in gSPModifyVertex to vertes shader.
+#define hack_legoRacers				(1<<14) //LEGO racers course map
+#define hack_doNotResetTLUTmode		(1<<15) //Don't set TLUT mode to none after dlist end. Quake 64
+#define hack_LoadDepthTextures		(1<<16) //Load textures for depth buffer
+#define hack_Snap					(1<<17) //Frame buffer settings for camera detection in Pokemon Snap. Copy aux buffers at fullsync
+#define hack_MK64					(1<<18) //Hack for load MK64 HD textures properly.
+#define hack_RE2					(1<<19) //RE2 hacks.
 
 extern Config config;
 

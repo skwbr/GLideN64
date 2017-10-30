@@ -1,10 +1,15 @@
 #include "PluginAPI.h"
 #include "Types.h"
+#include "mupenplus/GLideN64_mupenplus.h"
+#include "N64.h"
 
 extern "C" {
 
 EXPORT int CALL RomOpen(void)
 {
+	if (rdram_size != nullptr)
+		RDRAMSize = *rdram_size - 1;
+
 	api().RomOpen();
 	return 1;
 }
@@ -44,24 +49,9 @@ EXPORT void CALL SetRenderingCallback(void (*callback)(int))
 	api().SetRenderingCallback(callback);
 }
 
-EXPORT void CALL FBRead(u32 addr)
+EXPORT void CALL ResizeVideoOutput(int width, int height)
 {
-	api().FBRead(addr);
-}
-
-EXPORT void CALL FBWrite(u32 addr, u32 size)
-{
-	api().FBWrite(addr, size);
-}
-
-EXPORT void CALL FBGetFrameBufferInfo(void *p)
-{
-	api().FBGetFrameBufferInfo(p);
-}
-
-EXPORT void CALL ResizeVideoOutput(int Width, int Height)
-{
-	api().ResizeVideoOutput(Width, Height);
+	api().ResizeVideoOutput(width, height);
 }
 
 } // extern "C"

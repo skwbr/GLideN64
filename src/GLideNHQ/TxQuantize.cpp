@@ -32,21 +32,13 @@
 
 #include "TxQuantize.h"
 
-TxQuantize::TxQuantize()
+static const unsigned char One2Eight[2] =
 {
-	_txUtil = new TxUtil();
+	0, // 0 = 00000000
+	255, // 1 = 11111111
+};
 
-	/* get number of CPU cores. */
-	_numcore = _txUtil->getNumberofProcessors();
-}
-
-
-TxQuantize::~TxQuantize()
-{
-	delete _txUtil;
-}
-
-const volatile unsigned char Five2Eight[32] =
+static const unsigned char Five2Eight[32] =
 {
 	0, // 00000 = 00000000
 	8, // 00001 = 00001000
@@ -82,11 +74,16 @@ const volatile unsigned char Five2Eight[32] =
 	255  // 11111 = 11111111
 };
 
-const volatile unsigned char One2Eight[2] =
+TxQuantize::TxQuantize()
 {
-	0, // 0 = 00000000
-	255, // 1 = 11111111
-};
+	/* get number of CPU cores. */
+	_numcore = TxUtil::getNumberofProcessors();
+}
+
+
+TxQuantize::~TxQuantize()
+{
+}
 
 void
 TxQuantize::ARGB1555_ARGB8888(uint32* src, uint32* dest, int width, int height)
@@ -116,19 +113,18 @@ TxQuantize::ARGB1555_ARGB8888(uint32* src, uint32* dest, int width, int height)
 void
 TxQuantize::ARGB4444_ARGB8888(uint32* src, uint32* dest, int width, int height)
 {
-	int siz = (width * height) >> 1;
-	int i;
-	for (i = 0; i < siz; i++) {
-		*dest = ((*src & 0x0000f000) << 12) |
-				((*src & 0x00000f00) << 8) |
-				((*src & 0x000000f0) << 4) |
-				(*src & 0x0000000f);
-		*dest |= (*dest << 4);
+	const int siz = (width * height) >> 1;
+	for (int i = 0; i < siz; ++i) {
+		*dest = ((*src & 0x0000f000) >> 8 ) |
+				((*src & 0x00000f00) << 4 ) |
+				((*src & 0x000000f0) << 16) |
+				((*src & 0x0000000f) << 28);
+		*dest |= (*dest >> 4);
 		dest++;
-		*dest = ((*src & 0xf0000000) |
-				 ((*src & 0x0f000000) >> 4) |
-				 ((*src & 0x00f00000) >> 8) |
-				 ((*src & 0x000f0000) >> 12));
+		*dest =  ((*src & 0xf0000000) >> 24) |
+				 ((*src & 0x0f000000) >> 12) |
+				 ((*src & 0x00f00000) >> 0 ) |
+				 ((*src & 0x000f0000) << 12);
 		*dest |= (*dest >> 4);
 		dest++;
 		src++;
@@ -257,18 +253,17 @@ TxQuantize::ARGB8888_ARGB1555(uint32* src, uint32* dest, int width, int height)
 void
 TxQuantize::ARGB8888_ARGB4444(uint32* src, uint32* dest, int width, int height)
 {
-	int siz = (width * height) >> 1;
-	int i;
-	for (i = 0; i < siz; i++) {
-		*dest = (((*src & 0xf0000000) >> 16) |
-				 ((*src & 0x00f00000) >> 12) |
-				 ((*src & 0x0000f000) >> 8) |
-				 ((*src & 0x000000f0) >> 4));
+	const int siz = (width * height) >> 1;
+	for (int i = 0; i < siz; ++i) {
+		*dest = (((*src & 0xf0000000) >> 28) |
+				 ((*src & 0x00f00000) >> 16) |
+				 ((*src & 0x0000f000) >> 4)  |
+				 ((*src & 0x000000f0) << 8));
 		src++;
-		*dest |= ((*src & 0xf0000000) |
-				  ((*src & 0x00f00000) << 4) |
-				  ((*src & 0x0000f000) << 8) |
-				  ((*src & 0x000000f0) << 12));
+		*dest |= (((*src & 0xf0000000) >> 12) |
+				  ((*src & 0x00f00000) << 0)  |
+				  ((*src & 0x0000f000) << 12) |
+				  ((*src & 0x000000f0) << 24));
 		src++;
 		dest++;
 	}

@@ -29,7 +29,7 @@
 #include <thread>
 #include <stdlib.h>
 
-#include "osal_files.h"
+#include <osal_files.h>
 #include "TxFilter.h"
 #include "TextureFilters.h"
 #include "TxDbg.h"
@@ -49,7 +49,6 @@ void TxFilter::clear()
 	/* clear other stuff */
 	delete _txImage;
 	delete _txQuantize;
-	delete _txUtil;
 }
 
 TxFilter::~TxFilter()
@@ -60,7 +59,7 @@ TxFilter::~TxFilter()
 TxFilter::TxFilter(int maxwidth, int maxheight, int maxbpp, int options,
 	int cachesize, const wchar_t * path, const wchar_t * texPackPath, const wchar_t * ident,
 				   dispInfoFuncExt callback) :
-	_tex1(NULL), _tex2(NULL), _txQuantize(NULL), _txTexCache(NULL), _txHiResCache(NULL), _txUtil(NULL), _txImage(NULL)
+	_tex1(nullptr), _tex2(nullptr), _txQuantize(nullptr), _txTexCache(nullptr), _txHiResCache(nullptr), _txImage(nullptr)
 {
 	/* HACKALERT: the emulator misbehaves and sometimes forgets to shutdown */
 	if ((ident && wcscmp(ident, wst("DEFAULT")) != 0 && _ident.compare(ident) == 0) &&
@@ -90,19 +89,17 @@ TxFilter::TxFilter(int maxwidth, int maxheight, int maxbpp, int options,
 
 	_txImage      = new TxImage();
 	_txQuantize   = new TxQuantize();
-	_txUtil       = new TxUtil();
 
 	/* get number of CPU cores. */
-	_numcore = _txUtil->getNumberofProcessors();
+	_numcore = TxUtil::getNumberofProcessors();
 
 	_initialized = 0;
 
-	_tex1 = NULL;
-	_tex2 = NULL;
+	_tex1 = nullptr;
+	_tex2 = nullptr;
 
-	/* XXX: anything larger than 1024 * 1024 is overkill */
-	_maxwidth  = maxwidth  > 1024 ? 1024 : maxwidth;
-	_maxheight = maxheight > 1024 ? 1024 : maxheight;
+	_maxwidth  = maxwidth  > 4096 ? 4096 : maxwidth;
+	_maxheight = maxheight > 4096 ? 4096 : maxheight;
 	_maxbpp    = maxbpp;
 
 	_cacheSize = cachesize;
@@ -162,7 +159,7 @@ TxFilter::filter(uint8 *src, int srcwidth, int srcheight, uint16 srcformat, uint
 
 		/* calculate checksum of source texture */
 		if (!g64crc)
-			g64crc = (uint64)(_txUtil->checksumTx(texture, srcwidth, srcheight, srcformat));
+			g64crc = (uint64)(TxUtil::checksumTx(texture, srcwidth, srcheight, srcformat));
 
 		DBG_INFO(80, wst("filter: crc:%08X %08X %d x %d gfmt:%x\n"),
 				 (uint32)(g64crc >> 32), (uint32)(g64crc & 0xffffffff), srcwidth, srcheight, srcformat);
@@ -284,6 +281,7 @@ TxFilter::filter(uint8 *src, int srcwidth, int srcheight, uint16 srcformat, uint
 				num_filters++;
 			}
 
+			filter |= _options & DEPOSTERIZE;
 			/*
 	   * execute texture enhancements and filters
 	   */
@@ -312,7 +310,8 @@ TxFilter::filter(uint8 *src, int srcwidth, int srcheight, uint16 srcformat, uint
 																srcwidth,
 																blkheight,
 																(uint32*)_tmptex,
-																filter));
+																filter,
+																i));
 						_texture += srcStride;
 						_tmptex  += destStride;
 					}
@@ -321,13 +320,14 @@ TxFilter::filter(uint8 *src, int srcwidth, int srcheight, uint16 srcformat, uint
 															srcwidth,
 															srcheight - blkheight * i,
 															(uint32*)_tmptex,
-															filter));
+															filter,
+															i));
 					for (i = 0; i < numcore; i++) {
 						thrd[i]->join();
 						delete thrd[i];
 					}
 				} else {
-					filter_8888((uint32*)_texture, srcwidth, srcheight, (uint32*)_tmptex, filter);
+					filter_8888((uint32*)_texture, srcwidth, srcheight, (uint32*)_tmptex, filter, 0);
 				}
 
 				if (filter & ENHANCEMENT_MASK) {
@@ -344,8 +344,9 @@ TxFilter::filter(uint8 *src, int srcwidth, int srcheight, uint16 srcformat, uint
 			/*
 	   * texture (re)conversions
 	   */
-			if (destformat == GL_RGBA8) {
-				if (srcformat == GL_RGBA8 && (_maxbpp < 32 || _options & FORCE16BPP_TEX)) srcformat = GL_RGBA4;
+			if (destformat == GL_RGBA8 && (_maxbpp < 32 || _options & FORCE16BPP_TEX)) {
+				if (srcformat == GL_RGBA8)
+					srcformat = GL_RGBA4;
 				if (srcformat != GL_RGBA8) {
 					tmptex = (texture == _tex1) ? _tex2 : _tex1;
 					if (!_txQuantize->quantize(texture, tmptex, srcwidth, srcheight, GL_RGBA8, srcformat)) {
@@ -560,7 +561,7 @@ uint64
 TxFilter::checksum64(uint8 *src, int width, int height, int size, int rowStride, uint8 *palette)
 {
 	if (_options & (HIRESTEXTURES_MASK|DUMP_TEX))
-		return _txUtil->checksum64(src, width, height, size, rowStride, palette);
+		return TxUtil::checksum64(src, width, height, size, rowStride, palette);
 
 	return 0;
 }
@@ -586,7 +587,7 @@ TxFilter::dmptx(uint8 *src, int width, int height, int rowStridePixel, uint16 gf
 
 	if (!_path.empty() && !_ident.empty()) {
 		/* dump it to disk */
-		FILE *fp = NULL;
+		FILE *fp = nullptr;
 		tx_wstring tmpbuf;
 
 		/* create directories */
@@ -608,11 +609,11 @@ TxFilter::dmptx(uint8 *src, int width, int height, int rowStridePixel, uint16 gf
 		}
 
 #ifdef WIN32
-		if ((fp = _wfopen(tmpbuf.c_str(), wst("wb"))) != NULL) {
+		if ((fp = _wfopen(tmpbuf.c_str(), wst("wb"))) != nullptr) {
 #else
 		char cbuf[MAX_PATH];
 		wcstombs(cbuf, tmpbuf.c_str(), MAX_PATH);
-		if ((fp = fopen(cbuf, "wb")) != NULL) {
+		if ((fp = fopen(cbuf, "wb")) != nullptr) {
 #endif
 			_txImage->writePNG(src, fp, width, height, (rowStridePixel << 2), 0x0003, 0);
 			fclose(fp);

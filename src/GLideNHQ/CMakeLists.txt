@@ -20,23 +20,34 @@ set(GLideNHQ_SOURCES
   TxUtil.cpp
 )
 
-if(PANDORA)
-include_directories( osal )
-else(PANDORA)
-include_directories( inc osal )
-endif(PANDORA)
+if(MINGW OR PANDORA OR BCMHOST)
+  include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../osal )
+else(MINGW OR PANDORA OR BCMHOST)
+  include_directories( inc ${CMAKE_CURRENT_SOURCE_DIR}/../osal )
+endif(MINGW OR PANDORA OR BCMHOST)
 LINK_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR}/lib )
 
-if(UNIX)
-  list(APPEND GLideNHQ_SOURCES osal/osal_files_unix.c)
+if(GLES2)
   add_definitions(
-    -DNDEBUG
-    -DOS_LINUX
-  )
+    -DGLES2
+   )
+endif(GLES2)
+
+if(UNIX)
+  if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    add_definitions(
+      -DOS_MAC_OS_X
+    )
+    set(APPLE ON)
+  elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    add_definitions(
+      -DNDEBUG
+      -DOS_LINUX
+    )
+  endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif(UNIX)
 
 if(WIN32)
-  list(APPEND GLideNHQ_SOURCES osal/osal_files_win32.c)
   LINK_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR}/lib )
   add_definitions(
 	-DWIN32
@@ -59,23 +70,18 @@ if( CMAKE_BUILD_TYPE STREQUAL "Debug")
 	)
 endif( CMAKE_BUILD_TYPE STREQUAL "Debug")
 
-find_package(OpenGL REQUIRED)
-include_directories(${OpenGL_INCLUDE_DIRS})
-link_directories(${OpenGL_LIBRARY_DIRS})
-add_definitions(${OpenGL_DEFINITIONS})
-if(NOT OPENGL_FOUND)
-	message(ERROR " OPENGL not found!")
-endif(NOT OPENGL_FOUND)
-
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	add_definitions( -D__MSC__)
 endif()
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     SET(GCC_CPP11_COMPILE_FLAGS "-std=c++0x")
     if( NOT GHQCHK )
-      SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_CPP11_COMPILE_FLAGS} -static -fPIC " )
-      SET( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -static -fPIC " )
+      if ( NOT MINGW )
+          SET ( PIC_FLAGS "-fPIC" )
+      endif ( NOT MINGW)
+      SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_CPP11_COMPILE_FLAGS} -static ${PIC_FLAGS} " )
+      SET( CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -static ${PIC_FLAGS} " )
     else( NOT GHQCHK )
       SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_CPP11_COMPILE_FLAGS}" )
     endif( NOT GHQCHK )
@@ -92,10 +98,22 @@ if( NOT GHQCHK )
       set_target_properties(GLideNHQd PROPERTIES LINK_SEARCH_START_STATIC 1)
       set_target_properties(GLideNHQd PROPERTIES LINK_SEARCH_END_STATIC 1)
 
-      target_link_libraries(GLideNHQd PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/lib/libpng.a
-            ${CMAKE_CURRENT_SOURCE_DIR}/lib/libz.a
-       )
+      if(MINGW OR BCMHOST OR APPLE OR USE_SYSTEM_LIBS)
+        FIND_PACKAGE( ZLIB REQUIRED )
+        FIND_PACKAGE( PNG REQUIRED )
+        target_link_libraries(GLideNHQd
+          ${PNG_LIBRARIES}
+          ${ZLIB_LIBRARIES}
+          osald
+        )
+      else(MINGW OR BCMHOST OR APPLE OR USE_SYSTEM_LIBS)
+        target_link_libraries(GLideNHQd PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/lib/libpng.a
+          ${CMAKE_CURRENT_SOURCE_DIR}/lib/libz.a
+          dl
+          osald
+        )
+      endif(MINGW OR BCMHOST OR APPLE OR USE_SYSTEM_LIBS)
     endif( CMAKE_BUILD_TYPE STREQUAL "Debug")
 
     if( CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -108,14 +126,25 @@ if( NOT GHQCHK )
 
       if(PANDORA)
         target_link_libraries(GLideNHQ PRIVATE
-              /mnt/utmp/codeblocks/usr/lib/libpng.a
-              /mnt/utmp/codeblocks/usr/lib/libz.a
-         )
+          /mnt/utmp/codeblocks/usr/lib/libpng.a
+          /mnt/utmp/codeblocks/usr/lib/libz.a
+          osal
+        )
+      elseif(BCMHOST OR MINGW OR APPLE OR USE_SYSTEM_LIBS)
+        FIND_PACKAGE( ZLIB REQUIRED )
+        FIND_PACKAGE( PNG REQUIRED )
+        target_link_libraries(GLideNHQ
+          ${PNG_LIBRARIES}
+          ${ZLIB_LIBRARIES}
+          osal
+        )
       else(PANDORA)
         target_link_libraries(GLideNHQ PRIVATE
-              ${CMAKE_CURRENT_SOURCE_DIR}/lib/libpng.a
-              ${CMAKE_CURRENT_SOURCE_DIR}/lib/libz.a
-         )
+          ${CMAKE_CURRENT_SOURCE_DIR}/lib/libpng.a
+          ${CMAKE_CURRENT_SOURCE_DIR}/lib/libz.a
+          dl
+          osal
+        )
       endif(PANDORA)
     endif( CMAKE_BUILD_TYPE STREQUAL "Release")
 else( NOT GHQCHK )
@@ -139,3 +168,4 @@ else( NOT GHQCHK )
     target_link_libraries(ghqchk ${OPENGL_LIBRARIES} png z )
     endif( CMAKE_BUILD_TYPE STREQUAL "Release")
 endif( NOT GHQCHK )
+

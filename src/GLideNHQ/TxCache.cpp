@@ -27,7 +27,7 @@
 
 #include "TxCache.h"
 #include "TxDbg.h"
-#include "osal_files.h"
+#include <osal_files.h>
 #include <zlib.h>
 #include <memory.h>
 #include <stdlib.h>
@@ -36,15 +36,11 @@ TxCache::~TxCache()
 {
 	/* free memory, clean up, etc */
 	clear();
-
-	delete _txUtil;
 }
 
 TxCache::TxCache(int options, int cachesize, const wchar_t *path, const wchar_t *ident,
 				 dispInfoFuncExt callback)
 {
-	_txUtil = new TxUtil();
-
 	_options = options;
 	_cacheSize = cachesize;
 	_callback = callback;
@@ -67,8 +63,8 @@ TxCache::TxCache(int options, int cachesize, const wchar_t *path, const wchar_t 
 
 		if (!_gzdest0 || !_gzdest1 || !_gzdestLen) {
 			_options &= ~(GZ_TEXCACHE|GZ_HIRESTEXCACHE);
-			_gzdest0 = NULL;
-			_gzdest1 = NULL;
+			_gzdest0 = nullptr;
+			_gzdest1 = nullptr;
 			_gzdestLen = 0;
 		}
 	}
@@ -85,13 +81,13 @@ TxCache::add(uint64 checksum, GHQTexInfo *info, int dataSize)
 	uint32 format = info->format;
 
 	if (!dataSize) {
-		dataSize = _txUtil->sizeofTx(info->width, info->height, info->format);
+		dataSize = TxUtil::sizeofTx(info->width, info->height, info->format);
 
 		if (!dataSize) return 0;
 
 		if (_options & (GZ_TEXCACHE|GZ_HIRESTEXCACHE)) {
 			/* zlib compress it. compression level:1 (best speed) */
-			uint32 destLen = _gzdestLen;
+			uLongf destLen = _gzdestLen;
 			dest = (dest == _gzdest0) ? _gzdest1 : _gzdest0;
 			if (compress2(dest, &destLen, info->data, dataSize, 1) != Z_OK) {
 				dest = info->data;
@@ -203,7 +199,7 @@ TxCache::get(uint64 checksum, GHQTexInfo *info)
 
 		/* zlib decompress it */
 		if (info->format & GL_TEXFMT_GZ) {
-			uint32 destLen = _gzdestLen;
+			uLongf destLen = _gzdestLen;
 			uint8 *dest = (_gzdest0 == info->data) ? _gzdest1 : _gzdest0;
 			if (uncompress(dest, &destLen, info->data, ((*itMap).second)->size) != Z_OK) {
 				DBG_INFO(80, wst("Error: zlib decompression failed!\n"));
@@ -268,7 +264,7 @@ TxCache::save(const wchar_t *path, const wchar_t *filename, int config)
 	  destLen = _gzdestLen;
 	  if (dest && destLen) {
 	  if (uncompress(dest, &destLen, (*itMap).second->info.data, (*itMap).second->size) != Z_OK) {
-	  dest = NULL;
+	  dest = nullptr;
 	  destLen = 0;
 	  }
 	  format &= ~GL_TEXFMT_GZ;

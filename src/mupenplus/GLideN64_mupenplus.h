@@ -1,6 +1,7 @@
 #ifndef GLIDEN64_MUPENPLUS_H
 #define GLIDEN64_MUPENPLUS_H
 
+#include "m64p_common.h"
 #include "m64p_config.h"
 #include "m64p_vidext.h"
 
@@ -25,6 +26,9 @@ extern ptr_ConfigGetParamInt      ConfigGetParamInt;
 extern ptr_ConfigGetParamFloat    ConfigGetParamFloat;
 extern ptr_ConfigGetParamBool     ConfigGetParamBool;
 extern ptr_ConfigGetParamString   ConfigGetParamString;
+extern ptr_ConfigExternalGetParameter ConfigExternalGetParameter;
+extern ptr_ConfigExternalOpen ConfigExternalOpen;
+extern ptr_ConfigExternalClose ConfigExternalClose;
 
 extern ptr_ConfigGetSharedDataFilepath ConfigGetSharedDataFilepath;
 extern ptr_ConfigGetUserConfigPath     ConfigGetUserConfigPath;
@@ -44,6 +48,14 @@ extern ptr_VidExt_GL_SetAttribute       CoreVideo_GL_SetAttribute;
 extern ptr_VidExt_GL_GetAttribute       CoreVideo_GL_GetAttribute;
 extern ptr_VidExt_GL_SwapBuffers        CoreVideo_GL_SwapBuffers;
 
+extern ptr_PluginGetVersion             CoreGetVersion;
+
+extern const unsigned int* rdram_size;
+
 extern void(*renderCallback)(int);
+
+extern m64p_handle g_configVideoGeneral;
+extern m64p_handle g_configVideoGliden64;
+bool Config_SetDefault();
 
 #endif // GLIDEN64_MUPENPLUS_H

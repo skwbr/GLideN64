@@ -26,6 +26,10 @@ void _loadSettings(QSettings & settings)
 	config.video.windowedHeight = settings.value("windowedHeight", config.video.windowedHeight).toInt();
 	config.video.fullscreenRefresh = settings.value("fullscreenRefresh", config.video.fullscreenRefresh).toInt();
 	config.video.multisampling = settings.value("multisampling", config.video.multisampling).toInt();
+	config.video.verticalSync = settings.value("verticalSync", config.video.verticalSync).toInt();
+	config.video.cropMode = settings.value("cropMode", config.video.cropMode).toInt();
+	config.video.cropWidth = settings.value("cropWidth", config.video.cropWidth).toInt();
+	config.video.cropHeight = settings.value("cropHeight", config.video.cropHeight).toInt();
 	settings.endGroup();
 
 	settings.beginGroup("texture");
@@ -36,26 +40,35 @@ void _loadSettings(QSettings & settings)
 	settings.endGroup();
 
 	settings.beginGroup("generalEmulation");
-	config.generalEmulation.enableFog = settings.value("enableFog", config.generalEmulation.enableFog).toInt();
 	config.generalEmulation.enableNoise = settings.value("enableNoise", config.generalEmulation.enableNoise).toInt();
 	config.generalEmulation.enableLOD = settings.value("enableLOD", config.generalEmulation.enableLOD).toInt();
 	config.generalEmulation.enableHWLighting = settings.value("enableHWLighting", config.generalEmulation.enableHWLighting).toInt();
+	config.generalEmulation.enableShadersStorage = settings.value("enableShadersStorage", config.generalEmulation.enableShadersStorage).toInt();
 	config.generalEmulation.enableCustomSettings = settings.value("enableCustomSettings", config.generalEmulation.enableCustomSettings).toInt();
+	config.generalEmulation.correctTexrectCoords = settings.value("correctTexrectCoords", config.generalEmulation.correctTexrectCoords).toInt();
+	config.generalEmulation.enableNativeResTexrects = settings.value("enableNativeResTexrects", config.generalEmulation.enableNativeResTexrects).toInt();
 	settings.endGroup();
 
 	settings.beginGroup("frameBufferEmulation");
 	config.frameBufferEmulation.enable = settings.value("enable", config.frameBufferEmulation.enable).toInt();
+	config.frameBufferEmulation.aspect = settings.value("aspect", config.frameBufferEmulation.aspect).toInt();
+	config.frameBufferEmulation.nativeResFactor = settings.value("nativeResFactor", config.frameBufferEmulation.nativeResFactor).toInt();
+	config.frameBufferEmulation.bufferSwapMode = settings.value("bufferSwapMode", config.frameBufferEmulation.bufferSwapMode).toInt();
+	config.frameBufferEmulation.N64DepthCompare = settings.value("N64DepthCompare", config.frameBufferEmulation.N64DepthCompare).toInt();
+	config.frameBufferEmulation.copyAuxToRDRAM = settings.value("copyAuxToRDRAM", config.frameBufferEmulation.copyAuxToRDRAM).toInt();
 	config.frameBufferEmulation.copyToRDRAM = settings.value("copyToRDRAM", config.frameBufferEmulation.copyToRDRAM).toInt();
 	config.frameBufferEmulation.copyDepthToRDRAM = settings.value("copyDepthToRDRAM", config.frameBufferEmulation.copyDepthToRDRAM).toInt();
 	config.frameBufferEmulation.copyFromRDRAM = settings.value("copyFromRDRAM", config.frameBufferEmulation.copyFromRDRAM).toInt();
-	config.frameBufferEmulation.detectCFB = settings.value("detectCFB", config.frameBufferEmulation.detectCFB).toInt();
-	config.frameBufferEmulation.N64DepthCompare = settings.value("N64DepthCompare", config.frameBufferEmulation.N64DepthCompare).toInt();
-	config.frameBufferEmulation.aspect = settings.value("aspect", config.frameBufferEmulation.aspect).toInt();
+	config.frameBufferEmulation.fbInfoDisabled = settings.value("fbInfoDisabled", config.frameBufferEmulation.fbInfoDisabled).toInt();
+	config.frameBufferEmulation.fbInfoReadColorChunk = settings.value("fbInfoReadColorChunk", config.frameBufferEmulation.fbInfoReadColorChunk).toInt();
+	config.frameBufferEmulation.fbInfoReadDepthChunk = settings.value("fbInfoReadDepthChunk", config.frameBufferEmulation.fbInfoReadDepthChunk).toInt();
+
 	settings.endGroup();
 
 	settings.beginGroup("textureFilter");
 	config.textureFilter.txFilterMode = settings.value("txFilterMode", config.textureFilter.txFilterMode).toInt();
 	config.textureFilter.txEnhancementMode = settings.value("txEnhancementMode", config.textureFilter.txEnhancementMode).toInt();
+	config.textureFilter.txDeposterize = settings.value("txDeposterize", config.textureFilter.txDeposterize).toInt();
 	config.textureFilter.txFilterIgnoreBG = settings.value("txFilterIgnoreBG", config.textureFilter.txFilterIgnoreBG).toInt();
 	config.textureFilter.txCacheSize = settings.value("txCacheSize", config.textureFilter.txCacheSize).toInt();
 	config.textureFilter.txHiresEnable = settings.value("txHiresEnable", config.textureFilter.txHiresEnable).toInt();
@@ -77,19 +90,27 @@ void _loadSettings(QSettings & settings)
 	config.font.color[0] = fontColor.red();
 	config.font.color[1] = fontColor.green();
 	config.font.color[2] = fontColor.blue();
-	config.font.color[4] = fontColor.alpha();
+	config.font.color[3] = fontColor.alpha();
 	config.font.colorf[0] = _FIXED2FLOAT(config.font.color[0], 8);
 	config.font.colorf[1] = _FIXED2FLOAT(config.font.color[1], 8);
 	config.font.colorf[2] = _FIXED2FLOAT(config.font.color[2], 8);
 	config.font.colorf[3] = config.font.color[3] == 0 ? 1.0f : _FIXED2FLOAT(config.font.color[3], 8);
 	settings.endGroup();
 
-	settings.beginGroup("bloomFilter");
-	config.bloomFilter.enable = settings.value("enable", config.bloomFilter.enable).toInt();
-	config.bloomFilter.thresholdLevel = settings.value("thresholdLevel", config.bloomFilter.thresholdLevel).toInt();
-	config.bloomFilter.blendMode = settings.value("blendMode", config.bloomFilter.blendMode).toInt();
-	config.bloomFilter.blurAmount = settings.value("blurAmount", config.bloomFilter.blurAmount).toInt();
-	config.bloomFilter.blurStrength = settings.value("blurStrength", config.bloomFilter.blurStrength).toInt();
+	settings.beginGroup("gammaCorrection");
+	config.gammaCorrection.force = settings.value("force", config.gammaCorrection.force).toInt();
+	config.gammaCorrection.level = settings.value("level", config.gammaCorrection.level).toFloat();
+	settings.endGroup();
+
+	settings.beginGroup("onScreenDispaly");
+	config.onScreenDisplay.fps = settings.value("showFPS", config.onScreenDisplay.fps).toInt();
+	config.onScreenDisplay.vis = settings.value("showVIS", config.onScreenDisplay.vis).toInt();
+	config.onScreenDisplay.percent = settings.value("showPercent", config.onScreenDisplay.percent).toInt();
+	config.onScreenDisplay.pos = settings.value("osdPos", config.onScreenDisplay.pos).toInt();
+	settings.endGroup();
+
+	settings.beginGroup("debug");
+	config.debug.dumpMode = settings.value("dumpMode", config.debug.dumpMode).toInt();
 	settings.endGroup();
 }
 
@@ -128,6 +149,10 @@ void writeSettings(const QString & _strIniFolder)
 	settings.setValue("windowedHeight", config.video.windowedHeight);
 	settings.setValue("fullscreenRefresh", config.video.fullscreenRefresh);
 	settings.setValue("multisampling", config.video.multisampling);
+	settings.setValue("verticalSync", config.video.verticalSync);
+	settings.setValue("cropMode", config.video.cropMode);
+	settings.setValue("cropWidth", config.video.cropWidth);
+	settings.setValue("cropHeight", config.video.cropHeight);
 	settings.endGroup();
 
 	settings.beginGroup("texture");
@@ -138,26 +163,34 @@ void writeSettings(const QString & _strIniFolder)
 	settings.endGroup();
 
 	settings.beginGroup("generalEmulation");
-	settings.setValue("enableFog", config.generalEmulation.enableFog);
 	settings.setValue("enableNoise", config.generalEmulation.enableNoise);
 	settings.setValue("enableLOD", config.generalEmulation.enableLOD);
 	settings.setValue("enableHWLighting", config.generalEmulation.enableHWLighting);
+	settings.setValue("enableShadersStorage", config.generalEmulation.enableShadersStorage);
 	settings.setValue("enableCustomSettings", config.generalEmulation.enableCustomSettings);
+	settings.setValue("correctTexrectCoords", config.generalEmulation.correctTexrectCoords);
+	settings.setValue("enableNativeResTexrects", config.generalEmulation.enableNativeResTexrects);
 	settings.endGroup();
 
 	settings.beginGroup("frameBufferEmulation");
 	settings.setValue("enable", config.frameBufferEmulation.enable);
+	settings.setValue("aspect", config.frameBufferEmulation.aspect);
+	settings.setValue("nativeResFactor", config.frameBufferEmulation.nativeResFactor);
+	settings.setValue("bufferSwapMode", config.frameBufferEmulation.bufferSwapMode);
+	settings.setValue("N64DepthCompare", config.frameBufferEmulation.N64DepthCompare);
+	settings.setValue("copyAuxToRDRAM", config.frameBufferEmulation.copyAuxToRDRAM);
+	settings.setValue("copyFromRDRAM", config.frameBufferEmulation.copyFromRDRAM);
 	settings.setValue("copyToRDRAM", config.frameBufferEmulation.copyToRDRAM);
 	settings.setValue("copyDepthToRDRAM", config.frameBufferEmulation.copyDepthToRDRAM);
-	settings.setValue("copyFromRDRAM", config.frameBufferEmulation.copyFromRDRAM);
-	settings.setValue("detectCFB", config.frameBufferEmulation.detectCFB);
-	settings.setValue("N64DepthCompare", config.frameBufferEmulation.N64DepthCompare);
-	settings.setValue("aspect", config.frameBufferEmulation.aspect);
+	settings.setValue("fbInfoDisabled", config.frameBufferEmulation.fbInfoDisabled);
+	settings.setValue("fbInfoReadColorChunk", config.frameBufferEmulation.fbInfoReadColorChunk);
+	settings.setValue("fbInfoReadDepthChunk", config.frameBufferEmulation.fbInfoReadDepthChunk);
 	settings.endGroup();
 
 	settings.beginGroup("textureFilter");
 	settings.setValue("txFilterMode", config.textureFilter.txFilterMode);
 	settings.setValue("txEnhancementMode", config.textureFilter.txEnhancementMode);
+	settings.setValue("txDeposterize", config.textureFilter.txDeposterize);
 	settings.setValue("txFilterIgnoreBG", config.textureFilter.txFilterIgnoreBG);
 	settings.setValue("txCacheSize", config.textureFilter.txCacheSize);
 	settings.setValue("txHiresEnable", config.textureFilter.txHiresEnable);
@@ -176,12 +209,20 @@ void writeSettings(const QString & _strIniFolder)
 	settings.setValue("color", QColor(config.font.color[0], config.font.color[1], config.font.color[2], config.font.color[3]));
 	settings.endGroup();
 
-	settings.beginGroup("bloomFilter");
-	settings.setValue("enable", config.bloomFilter.enable);
-	settings.setValue("thresholdLevel", config.bloomFilter.thresholdLevel);
-	settings.setValue("blendMode", config.bloomFilter.blendMode);
-	settings.setValue("blurAmount", config.bloomFilter.blurAmount);
-	settings.setValue("blurStrength", config.bloomFilter.blurStrength);
+	settings.beginGroup("gammaCorrection");
+	settings.setValue("force", config.gammaCorrection.force);
+	settings.setValue("level", config.gammaCorrection.level);
+	settings.endGroup();
+
+	settings.beginGroup("onScreenDispaly");
+	settings.setValue("showFPS", config.onScreenDisplay.fps);
+	settings.setValue("showVIS", config.onScreenDisplay.vis);
+	settings.setValue("showPercent", config.onScreenDisplay.percent);
+	settings.setValue("osdPos", config.onScreenDisplay.pos);
+	settings.endGroup();
+
+	settings.beginGroup("debug");
+	settings.setValue("dumpMode", config.debug.dumpMode);
 	settings.endGroup();
 }
 
@@ -215,9 +256,6 @@ u32 Adler32(u32 crc, const void *buffer, u32 count)
 void loadCustomRomSettings(const QString & _strIniFolder, const char * _strRomName)
 {
 	QSettings settings(_strIniFolder + "/" + strCustomSettingsFileName, QSettings::IniFormat);
-	config.version = settings.value("version").toInt();
-	if (config.version != CONFIG_VERSION_CURRENT)
-		return;
 
 	const QByteArray bytes(_strRomName);
 	bool bASCII = true;

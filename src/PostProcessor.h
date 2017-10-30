@@ -1,39 +1,43 @@
 #ifndef POST_PROCESSOR_H
 #define POST_PROCESSOR_H
 
+#include <memory>
 #include "Types.h"
-#include "OpenGL.h"
 #include "Textures.h"
+#include "Graphics/ObjectHandle.h"
+
+namespace graphics {
+	class ShaderProgram;
+}
+
+struct FrameBuffer;
 
 class PostProcessor {
 public:
 	void init();
 	void destroy();
 
-	void process(FrameBuffer * _pBuffer);
+	FrameBuffer * doGammaCorrection(FrameBuffer * _pBuffer);
+	FrameBuffer * doOrientationCorrection(FrameBuffer * _pBuffer);
 
 	static PostProcessor & get();
 
 private:
-	PostProcessor() :
-		m_extractBloomProgram(0), m_seperableBlurProgram(0), m_glowProgram(0), m_bloomProgram(0), m_copyProgram(0),
-		m_FBO_original(0), m_FBO_glowMap(0), m_FBO_blur(0),
-		m_pTextureOriginal(NULL), m_pTextureGlowMap(NULL), m_pTextureBlur(NULL) {}
+	PostProcessor();
 	PostProcessor(const PostProcessor & _other);
 
-	GLuint m_extractBloomProgram;
-	GLuint m_seperableBlurProgram;
-	GLuint m_glowProgram;
-	GLuint m_bloomProgram;
-	GLuint m_copyProgram;
+	void _createResultBuffer(const FrameBuffer * _pMainBuffer);
+	void _initGammaCorrection();
+	void _destroyGammaCorrection();
+	void _initOrientationCorrection();
+	void _destroyOrientationCorrection();
+	void _preDraw(FrameBuffer * _pBuffer);
+	void _postDraw();
 
-	GLuint m_FBO_original;
-	GLuint m_FBO_glowMap;
-	GLuint m_FBO_blur;
-
+	std::unique_ptr<graphics::ShaderProgram> m_gammaCorrectionProgram;
+	std::unique_ptr<graphics::ShaderProgram> m_orientationCorrectionProgram;
+	std::unique_ptr<FrameBuffer> m_pResultBuffer;
 	CachedTexture * m_pTextureOriginal;
-	CachedTexture * m_pTextureGlowMap;
-	CachedTexture * m_pTextureBlur;
 };
 
 #endif // POST_PROCESSOR_H

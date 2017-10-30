@@ -7,15 +7,14 @@
 #include "GBI.h"
 #include "gDP.h"
 #include "gSP.h"
-#include "OpenGL.h"
-#include "Debug.h"
+#include "Config.h"
+#include "DebugDump.h"
+#include "DisplayWindow.h"
 
 void RDP_Unknown( u32 w0, u32 w1 )
 {
-#ifdef DEBUG
-	DebugMsg( DEBUG_UNKNOWN, "RDP_Unknown\r\n" );
-	DebugMsg( DEBUG_UNKNOWN, "\tUnknown RDP opcode %02X\r\n", _SHIFTR( w0, 24, 8 ) );
-#endif
+	DebugMsg(DEBUG_NORMAL, "RDP_Unknown\r\n");
+	DebugMsg(DEBUG_NORMAL, "\tUnknown RDP opcode %02X\r\n", _SHIFTR(w0, 24, 8));
 }
 
 void RDP_NoOp( u32 w0, u32 w1 )
@@ -230,12 +229,12 @@ void RDP_LoadSync( u32 w0, u32 w1 )
 }
 
 static
-void _getTexRectParams(u32 & w2, u32 & w3)
+bool _getTexRectParams(u32 & w2, u32 & w3)
 {
-	if (RSP.bLLE) {
+	if (RSP.LLE) {
 		w2 = RDP.w2;
 		w3 = RDP.w3;
-		return;
+		return true;
 	}
 
 	enum {
@@ -266,6 +265,16 @@ void _getTexRectParams(u32 & w2, u32 & w3)
 		RSP.PC[RSP.PCi] += 8;
 		break;
 	case gdpTexRect:
+		if ((config.generalEmulation.hacks & hack_WinBack) != 0) {
+			RSP.PC[RSP.PCi] += 8;
+			return false;
+		}
+		if (GBI.getMicrocodeType() == F3DSWRS) {
+			w2 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] +  8];
+			w3 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 12];
+			RSP.PC[RSP.PCi] += 8;
+			return true;
+		}
 		w2 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 0];
 		w3 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
 		RSP.PC[RSP.PCi] += 8;
@@ -278,38 +287,19 @@ void _getTexRectParams(u32 & w2, u32 & w3)
 	default:
 		assert(false && "Unknown texrect mode");
 	}
+	return true;
 }
 
-void RDP_TexRectFlip( u32 w0, u32 w1 )
+static
+void _TexRect( u32 w0, u32 w1, bool flip )
 {
 	u32 w2, w3;
-	_getTexRectParams(w2, w3);
+	if (!_getTexRectParams(w2, w3))
+		return;
 	const u32 ulx = _SHIFTR(w1, 12, 12);
 	const u32 uly = _SHIFTR(w1, 0, 12);
 	const u32 lrx = _SHIFTR(w0, 12, 12);
 	const u32 lry = _SHIFTR(w0, 0, 12);
-	if ((lrx >> 2) < (ulx >> 2) || (lry >> 2) < (uly >> 2))
-		return;
-	gDPTextureRectangleFlip(
-		_FIXED2FLOAT(ulx, 2),
-		_FIXED2FLOAT(uly, 2),
-		_FIXED2FLOAT(lrx, 2),
-		_FIXED2FLOAT(lry, 2),
-		_SHIFTR(w1, 24, 3),							// tile
-		_FIXED2FLOAT((s16)_SHIFTR(w2, 16, 16), 5),	// s
-		_FIXED2FLOAT((s16)_SHIFTR(w2, 0, 16), 5),	// t
-		_FIXED2FLOAT((s16)_SHIFTR(w3, 16, 16), 10),	// dsdx
-		_FIXED2FLOAT((s16)_SHIFTR(w3, 0, 16), 10));	// dsdy
-}
-
-void RDP_TexRect( u32 w0, u32 w1 )
-{
-	u32 w2, w3;
-	_getTexRectParams(w2, w3);
-	const u32 ulx = _SHIFTR(w1, 12, 12);
-	const u32 uly = _SHIFTR(w1,  0, 12);
-	const u32 lrx = _SHIFTR(w0, 12, 12);
-	const u32 lry = _SHIFTR(w0,  0, 12);
 	if ((lrx >> 2) < (ulx >> 2) || (lry >> 2) < (uly >> 2))
 		return;
 	gDPTextureRectangle(
@@ -321,7 +311,18 @@ void RDP_TexRect( u32 w0, u32 w1 )
 		_FIXED2FLOAT((s16)_SHIFTR(w2, 16, 16), 5),	// s
 		_FIXED2FLOAT((s16)_SHIFTR(w2, 0, 16), 5),	// t
 		_FIXED2FLOAT((s16)_SHIFTR(w3, 16, 16), 10),	// dsdx
-		_FIXED2FLOAT((s16)_SHIFTR(w3, 0, 16), 10));	// dsdy
+		_FIXED2FLOAT((s16)_SHIFTR(w3, 0, 16), 10),	// dsdy
+		flip);
+}
+
+void RDP_TexRectFlip( u32 w0, u32 w1 )
+{
+	_TexRect(w0, w1, true);
+}
+
+void RDP_TexRect( u32 w0, u32 w1 )
+{
+	_TexRect(w0, w1, false);
 }
 
 void RDP_TriFill( u32 _w0, u32 _w1 )
@@ -508,7 +509,7 @@ void RDP_Half_1( u32 _c )
 	u32 w0 = 0, w1 = _c;
 	u32 cmd = _SHIFTR( _c, 24, 8 );
 	if (cmd >= 0xc8 && cmd <=0xcf) {//triangle command
-		DebugMsg( DEBUG_HIGH | DEBUG_HANDLED, "gDPHalf_1 LLE Triangle\n");
+		DebugMsg(DEBUG_NORMAL, "gDPHalf_1 LLE Triangle\n");
 		RDP.cmd_ptr = 0;
 		RDP.cmd_cur = 0;
 		do {
@@ -519,8 +520,7 @@ void RDP_Half_1( u32 _c )
 			w1 = *(u32*)&RDRAM[RSP.PC[RSP.PCi] + 4];
 			RSP.cmd = _SHIFTR( w0, 24, 8 );
 
-			DebugRSPState( RSP.PCi, RSP.PC[RSP.PCi], _SHIFTR( w0, 24, 8 ), w0, w1 );
-			DebugMsg( DEBUG_LOW | DEBUG_HANDLED, "0x%08lX: CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR( w0, 24, 8 ), w0, w1 );
+			DebugMsg(DEBUG_NORMAL, "0x%08lX: CMD=0x%02lX W0=0x%08lX W1=0x%08lX\n", RSP.PC[RSP.PCi], _SHIFTR(w0, 24, 8), w0, w1);
 
 			RSP.PC[RSP.PCi] += 8;
 			// RSP.nextCmd = _SHIFTR( *(u32*)&RDRAM[RSP.PC[RSP.PCi]], 24, 8 );
@@ -531,7 +531,7 @@ void RDP_Half_1( u32 _c )
 		w1 = RDP.cmd_data[RDP.cmd_cur+1];
 		LLEcmd[RSP.cmd](w0, w1);
 	} else {
-		DebugMsg( DEBUG_HIGH | DEBUG_IGNORED, "gDPHalf_1()\n" );
+		DebugMsg(DEBUG_NORMAL | DEBUG_IGNORED, "gDPHalf_1()\n");
 	}
 }
 
@@ -553,7 +553,7 @@ inline u32 READ_RDP_DATA(u32 address)
 
 void RDP_ProcessRDPList()
 {
-	if (ConfigOpen || video().isResizeWindow()) {
+	if (ConfigOpen || dwnd().isResizeWindow()) {
 		dp_status &= ~0x0002;
 		dp_start = dp_current = dp_end;
 		gDPFullSync();
@@ -566,7 +566,7 @@ void RDP_ProcessRDPList()
 
 	if (dp_end <= dp_current) return;
 
-	RSP.bLLE = true;
+	RSP.LLE = true;
 
 	// load command data
 	for (u32 i = 0; i < length; i += 4) {
@@ -602,7 +602,7 @@ void RDP_ProcessRDPList()
 		RDP.cmd_cur = 0;
 	}
 
-	RSP.bLLE = false;
+	RSP.LLE = false;
 	gDP.changed |= CHANGED_COLORBUFFER;
 	gDP.changed &= ~CHANGED_CPU_FB_WRITE;
 

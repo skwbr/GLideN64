@@ -93,7 +93,7 @@ struct gDPTile
 	u32 textureMode;
 	u32 loadType;
 	u32 imageAddress;
-	FrameBuffer *frameBuffer;
+	u32 frameBufferAddress;
 };
 
 struct gDPLoadTileInfo {
@@ -101,16 +101,25 @@ struct gDPLoadTileInfo {
 	u8 loadType;
 	u16 uls;
 	u16 ult;
+	u16 lrs;
+	u16 lrt;
 	u16 width;
 	u16 height;
 	u16 texWidth;
 	u32 texAddress;
 	u32 dxt;
+	u32 bytes;
+};
+
+struct gDPScissor
+{
+	u32 mode;
+	f32 ulx, uly, lrx, lry;
 };
 
 struct gDPInfo
 {
-	struct
+	struct OtherMode
 	{
 		union
 		{
@@ -125,7 +134,7 @@ struct gDPInfo
 					unsigned int depthCompare : 1;
 					unsigned int depthUpdate : 1;
 					unsigned int imageRead : 1;
-					unsigned int clearOnCvg : 1;
+					unsigned int colorOnCvg : 1;
 
 					unsigned int cvgDest : 2;
 					unsigned int depthMode : 2;
@@ -180,13 +189,15 @@ struct gDPInfo
 	gDPCombine combine;
 
 	gDPTile tiles[8], *loadTile;
+	u32 loadTileIdx;
 
 	struct Color
 	{
+		Color() : r(0), g(0), b(0), a(0) {}
 		f32 r, g, b, a;
-	} fogColor,  blendColor, envColor;
+	} fogColor,  blendColor, envColor, rectColor;
 
-	struct
+	struct FillColor
 	{
 		f32 z, dz;
 		u32 color;
@@ -212,16 +223,11 @@ struct gDPInfo
 	{
 		u32 format, size, width, height, bpl;
 		u32 address, changed;
-		u32 depthImage;
 	} colorImage;
 
 	u32	depthImageAddress;
 
-	struct
-	{
-		u32 mode;
-		f32 ulx, uly, lrx, lry;
-	} scissor;
+	gDPScissor scissor;
 
 	struct
 	{
@@ -269,8 +275,7 @@ void gDPFillRectangle( s32 ulx, s32 uly, s32 lrx, s32 lry );
 void gDPSetConvert( s32 k0, s32 k1, s32 k2, s32 k3, s32 k4, s32 k5 );
 void gDPSetKeyR( u32 cR, u32 sR, u32 wR );
 void gDPSetKeyGB(u32 cG, u32 sG, u32 wG, u32 cB, u32 sB, u32 wB );
-void gDPTextureRectangle( f32 ulx, f32 uly, f32 lrx, f32 lry, s32 tile, f32 s, f32 t, f32 dsdx, f32 dtdy );
-void gDPTextureRectangleFlip( f32 ulx, f32 uly, f32 lrx, f32 lry, s32 tile, f32 s, f32 t, f32 dsdx, f32 dtdy );
+void gDPTextureRectangle( f32 ulx, f32 uly, f32 lrx, f32 lry, s32 tile, f32 s, f32 t, f32 dsdx, f32 dtdy, bool flip );
 void gDPFullSync();
 void gDPTileSync();
 void gDPPipeSync();
@@ -285,8 +290,6 @@ void gDPTriFillZ( u32 w0, u32 w1 );
 void gDPTriShadeZ( u32 w0, u32 w1 );
 void gDPTriTxtrZ( u32 w0, u32 w1 );
 void gDPTriShadeTxtrZ( u32 w0, u32 w1 );
-
-void gDPFillRDRAM( u32 address, s32 ulx, s32 uly, s32 lrx, s32 lry, u32 width, u32 size,  u32 color, bool scissor=true );
 
 #endif
 

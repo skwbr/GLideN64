@@ -1,23 +1,21 @@
 #ifndef COMMONPLUGINAPI_H
 #define COMMONPLUGINAPI_H
 
-#include <thread>
-#include <condition_variable>
-
 #ifdef MUPENPLUSAPI
 #include "m64p_plugin.h"
 #else
+#include "windows/GLideN64_windows.h"
 #include "ZilmarGFX_1_3.h"
+#include "FrameBufferInfoAPI.h"
 #define RSPTHREAD
 #endif
 
-enum API_COMMAND {
-	acNone = 0,
-	acProcessDList,
-	acProcessRDPList,
-	acUpdateScreen,
-	acRomClosed
-};
+#ifdef RSPTHREAD
+#include <thread>
+#include <condition_variable>
+#endif
+
+class APICommand;
 
 class PluginAPI
 {
@@ -60,11 +58,14 @@ public:
 	void ReadScreen(void **_dest, long *_width, long *_height);
 
 	void DllAbout(/*HWND _hParent*/);
+
+	// FrameBufferInfo extension
+	void FBWrite(unsigned int addr, unsigned int size);
+	void FBWList(FrameBufferModifyEntry *plist, unsigned int size);
+	void FBRead(unsigned int addr);
+	void FBGetFrameBufferInfo(void *pinfo);
 #else
 	// MupenPlus
-	void FBRead(unsigned int _addr) {}
-	void FBWrite(unsigned int addr, unsigned int size) {}
-	void FBGetFrameBufferInfo(void * _p) {}
 	void ResizeVideoOutput(int _Width, int _Height);
 	void ReadScreen2(void * _dest, int * _width, int * _height, int _front);
 
@@ -78,6 +79,11 @@ public:
 		int * _Capabilities
 	);
 	void SetRenderingCallback(void (*callback)(int));
+
+	// FrameBufferInfo extension
+	void FBWrite(unsigned int addr, unsigned int size);
+	void FBRead(unsigned int addr);
+	void FBGetFrameBufferInfo(void *pinfo);
 #endif
 
 	static PluginAPI & get();
@@ -85,7 +91,7 @@ public:
 private:
 	PluginAPI()
 #ifdef RSPTHREAD
-		: m_pRspThread(NULL), m_command(acNone)
+		: m_pRspThread(NULL), m_pCommand(nullptr)
 #endif
 	{}
 	PluginAPI(const PluginAPI &);
@@ -93,13 +99,13 @@ private:
 	void _initiateGFX(const GFX_INFO & _gfxInfo) const;
 
 #ifdef RSPTHREAD
-	void _callAPICommand(API_COMMAND _command);
+	void _callAPICommand(APICommand & _command);
 	std::mutex m_rspThreadMtx;
 	std::mutex m_pluginThreadMtx;
 	std::condition_variable_any m_rspThreadCv;
 	std::condition_variable_any m_pluginThreadCv;
 	std::thread * m_pRspThread;
-	API_COMMAND m_command;
+	APICommand * m_pCommand;
 #endif
 };
 
