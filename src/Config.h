@@ -4,7 +4,7 @@
 #include <string>
 #include "Types.h"
 
-#define CONFIG_VERSION_CURRENT 18U
+#define CONFIG_VERSION_CURRENT 20U
 
 #define BILINEAR_3POINT   0
 #define BILINEAR_STANDARD 1
@@ -40,7 +40,6 @@ struct Config
 		u32 maxAnisotropy;
 		f32 maxAnisotropyF;
 		u32 bilinearMode;
-		u32 maxBytes;
 		u32 screenShotFormat;
 	} texture;
 
@@ -131,7 +130,9 @@ struct Config
 		u32 txCacheCompression;			// Zip textures cache
 		u32 txSaveCache;				// Save texture cache to hard disk
 
-		wchar_t txPath[PLUGIN_PATH_SIZE];
+		wchar_t txPath[PLUGIN_PATH_SIZE]; // Path to texture packs
+		wchar_t txCachePath[PLUGIN_PATH_SIZE]; // Path to store texture cache, that is .htc files
+		wchar_t txDumpPath[PLUGIN_PATH_SIZE]; // Path to store texture dumps
 	} textureFilter;
 
 	struct
@@ -187,11 +188,13 @@ struct Config
 #define hack_ZeldaMM				(1<<12) //Special hacks for Zelda MM
 #define hack_ModifyVertexXyInShader	(1<<13) //Pass screen coordinates provided in gSPModifyVertex to vertes shader.
 #define hack_legoRacers				(1<<14) //LEGO racers course map
-#define hack_doNotResetTLUTmode		(1<<15) //Don't set TLUT mode to none after dlist end. Quake 64
-#define hack_LoadDepthTextures		(1<<16) //Load textures for depth buffer
-#define hack_Snap					(1<<17) //Frame buffer settings for camera detection in Pokemon Snap. Copy aux buffers at fullsync
-#define hack_MK64					(1<<18) //Hack for load MK64 HD textures properly.
-#define hack_RE2					(1<<19) //RE2 hacks.
+#define hack_doNotResetOtherModeH	(1<<15) //Don't reset othermode.h after dlist end. Quake and Quake 2
+#define hack_doNotResetOtherModeL	(1<<16) //Don't reset othermode.l after dlist end. Quake
+#define hack_LoadDepthTextures		(1<<17) //Load textures for depth buffer
+#define hack_Snap					(1<<18) //Frame buffer settings for camera detection in Pokemon Snap. Copy aux buffers at fullsync
+#define hack_MK64					(1<<19) //Hack for load MK64 HD textures properly.
+#define hack_RE2					(1<<20) //RE2 hacks.
+#define hack_ZeldaMonochrome		(1<<21) //Hack for Zeldas monochrome effects.
 
 extern Config config;
 
@@ -199,5 +202,7 @@ void Config_LoadConfig();
 #ifndef MUPENPLUSAPI
 void Config_DoConfig(/*HWND hParent*/);
 #endif
+
+bool isHWLightingAllowed();
 
 #endif // CONFIG_H

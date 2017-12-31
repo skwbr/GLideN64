@@ -265,7 +265,7 @@ void DotProductMax4FullNeon( float v0[3], float v1[4][3], float _lights[4][3], f
 
 void gSPLightVertex_NEON(u32 vnum, u32 v, SPVertex * spVtx)
 {
-	if (!config.generalEmulation.enableHWLighting) {
+	if (!isHWLightingAllowed()) {
 		for(int j = 0; j < vnum; ++j) {
 			SPVertex & vtx = spVtx[v + j];
 			vtx.r = gSP.lights.rgb[gSP.numLights][R];
@@ -298,11 +298,9 @@ void gSPLightVertex_NEON(u32 vnum, u32 v, SPVertex * spVtx)
 		}
 	} else {
 		for(int j = 0; j < vnum; ++j) {
-			SPVertex & vtx = spVtx[v + j];
+			SPVertex & vtx = spVtx[v+j];
+			TransformVectorNormalize(&vtx.r, gSP.matrix.modelView[gSP.matrix.modelViewi]);
 			vtx.HWLight = gSP.numLights;
-			vtx.r = vtx.nx;
-			vtx.g = vtx.ny;
-			vtx.b = vtx.nz;
 		}
 	}
 }

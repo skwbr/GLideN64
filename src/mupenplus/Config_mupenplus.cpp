@@ -15,9 +15,6 @@
 
 Config config;
 
-static
-const u32 uMegabyte = 1024U*1024U;
-
 m64p_handle g_configVideoGeneral = nullptr;
 m64p_handle g_configVideoGliden64 = nullptr;
 
@@ -68,8 +65,6 @@ bool Config_SetDefault()
 	res = ConfigSetDefaultBool(g_configVideoGliden64, "bilinearMode", config.texture.bilinearMode, "Bilinear filtering mode (0=N64 3point, 1=standard)");
 	assert(res == M64ERR_SUCCESS);
 	res = ConfigSetDefaultBool(g_configVideoGliden64, "MaxAnisotropy", config.texture.maxAnisotropy, "Max level of Anisotropic Filtering, 0 for off");
-	assert(res == M64ERR_SUCCESS);
-	res = ConfigSetDefaultInt(g_configVideoGliden64, "CacheSize", config.texture.maxBytes / uMegabyte, "Size of texture cache in megabytes. Good value is VRAM*3/4");
 	assert(res == M64ERR_SUCCESS);
 	//#Emulation Settings
 	res = ConfigSetDefaultBool(g_configVideoGliden64, "EnableNoise", config.generalEmulation.enableNoise, "Enable color noise emulation.");
@@ -128,7 +123,7 @@ bool Config_SetDefault()
 	assert(res == M64ERR_SUCCESS);
 	res = ConfigSetDefaultBool(g_configVideoGliden64, "txFilterIgnoreBG", config.textureFilter.txFilterIgnoreBG, "Don't filter background textures.");
 	assert(res == M64ERR_SUCCESS);
-	res = ConfigSetDefaultInt(g_configVideoGliden64, "txCacheSize", config.textureFilter.txCacheSize/uMegabyte, "Size of filtered textures cache in megabytes.");
+	res = ConfigSetDefaultInt(g_configVideoGliden64, "txCacheSize", config.textureFilter.txCacheSize/ gc_uMegabyte, "Size of filtered textures cache in megabytes.");
 	assert(res == M64ERR_SUCCESS);
 	res = ConfigSetDefaultBool(g_configVideoGliden64, "txHiresEnable", config.textureFilter.txHiresEnable, "Use high-resolution texture packs if available.");
 	assert(res == M64ERR_SUCCESS);
@@ -148,6 +143,12 @@ bool Config_SetDefault()
 	char txPath[PLUGIN_PATH_SIZE * 2];
 	wcstombs(txPath, config.textureFilter.txPath, PLUGIN_PATH_SIZE * 2);
 	res = ConfigSetDefaultString(g_configVideoGliden64, "txPath", txPath, "Path to folder with hi-res texture packs.");
+	assert(res == M64ERR_SUCCESS);
+	wcstombs(txPath, config.textureFilter.txCachePath, PLUGIN_PATH_SIZE * 2);
+	res = ConfigSetDefaultString(g_configVideoGliden64, "txCachePath", txPath, "Path to folder where plugin saves texture cache files.");
+	assert(res == M64ERR_SUCCESS);
+	wcstombs(txPath, config.textureFilter.txDumpPath, PLUGIN_PATH_SIZE * 2);
+	res = ConfigSetDefaultString(g_configVideoGliden64, "txDumpPath", txPath, "Path to folder where plugin saves dumped textures.");
 	assert(res == M64ERR_SUCCESS);
 
 	res = ConfigSetDefaultString(g_configVideoGliden64, "fontName", config.font.name.c_str(), "File name of True Type Font for text messages.");
@@ -226,8 +227,6 @@ void Config_LoadCustomConfig()
 	if (result == M64ERR_SUCCESS) config.texture.maxAnisotropy = atoi(value);
 	result = ConfigExternalGetParameter(fileHandle, sectionName, "texture\\bilinearMode", value, sizeof(value));
 	if (result == M64ERR_SUCCESS) config.texture.bilinearMode = atoi(value);
-	result = ConfigExternalGetParameter(fileHandle, sectionName, "texture\\maxBytes", value, sizeof(value));
-	if (result == M64ERR_SUCCESS) config.texture.maxBytes = atoi(value);
 	result = ConfigExternalGetParameter(fileHandle, sectionName, "texture\\screenShotFormat", value, sizeof(value));
 	if (result == M64ERR_SUCCESS) config.texture.screenShotFormat = atoi(value);
 
@@ -243,6 +242,10 @@ void Config_LoadCustomConfig()
 	if (result == M64ERR_SUCCESS) config.generalEmulation.correctTexrectCoords = atoi(value);
 	result = ConfigExternalGetParameter(fileHandle, sectionName, "generalEmulation\\enableNativeResTexrects", value, sizeof(value));
 	if (result == M64ERR_SUCCESS) config.generalEmulation.enableNativeResTexrects = atoi(value);
+	result = ConfigExternalGetParameter(fileHandle, sectionName, "generalEmulation\\enableLegacyBlending", value, sizeof(value));
+	if (result == M64ERR_SUCCESS) config.generalEmulation.enableLegacyBlending = atoi(value);
+	result = ConfigExternalGetParameter(fileHandle, sectionName, "generalEmulation\\enableFragmentDepthWrite", value, sizeof(value));
+	if (result == M64ERR_SUCCESS) config.generalEmulation.enableFragmentDepthWrite = atoi(value);
 
 	result = ConfigExternalGetParameter(fileHandle, sectionName, "frameBufferEmulation\\enable", value, sizeof(value));
 	if (result == M64ERR_SUCCESS) config.frameBufferEmulation.enable = atoi(value);
@@ -318,7 +321,6 @@ void Config_LoadConfig()
 	//#Texture Settings
 	config.texture.bilinearMode = ConfigGetParamBool(g_configVideoGliden64, "bilinearMode");
 	config.texture.maxAnisotropy = ConfigGetParamInt(g_configVideoGliden64, "MaxAnisotropy");
-	config.texture.maxBytes = ConfigGetParamInt(g_configVideoGliden64, "CacheSize") * uMegabyte;
 	//#Emulation Settings
 	config.generalEmulation.enableNoise = ConfigGetParamBool(g_configVideoGliden64, "EnableNoise");
 	config.generalEmulation.enableLOD = ConfigGetParamBool(g_configVideoGliden64, "EnableLOD");
@@ -350,7 +352,7 @@ void Config_LoadConfig()
 	config.textureFilter.txEnhancementMode = ConfigGetParamInt(g_configVideoGliden64, "txEnhancementMode");
 	config.textureFilter.txDeposterize = ConfigGetParamInt(g_configVideoGliden64, "txDeposterize");
 	config.textureFilter.txFilterIgnoreBG = ConfigGetParamBool(g_configVideoGliden64, "txFilterIgnoreBG");
-	config.textureFilter.txCacheSize = ConfigGetParamInt(g_configVideoGliden64, "txCacheSize") * uMegabyte;
+	config.textureFilter.txCacheSize = ConfigGetParamInt(g_configVideoGliden64, "txCacheSize") * gc_uMegabyte;
 	config.textureFilter.txHiresEnable = ConfigGetParamBool(g_configVideoGliden64, "txHiresEnable");
 	config.textureFilter.txHiresFullAlphaChannel = ConfigGetParamBool(g_configVideoGliden64, "txHiresFullAlphaChannel");
 	config.textureFilter.txHresAltCRC = ConfigGetParamBool(g_configVideoGliden64, "txHresAltCRC");
@@ -359,6 +361,8 @@ void Config_LoadConfig()
 	config.textureFilter.txCacheCompression = ConfigGetParamBool(g_configVideoGliden64, "txCacheCompression");
 	config.textureFilter.txSaveCache = ConfigGetParamBool(g_configVideoGliden64, "txSaveCache");
 	::mbstowcs(config.textureFilter.txPath, ConfigGetParamString(g_configVideoGliden64, "txPath"), PLUGIN_PATH_SIZE);
+	::mbstowcs(config.textureFilter.txCachePath, ConfigGetParamString(g_configVideoGliden64, "txCachePath"), PLUGIN_PATH_SIZE);
+	::mbstowcs(config.textureFilter.txDumpPath, ConfigGetParamString(g_configVideoGliden64, "txDumpPath"), PLUGIN_PATH_SIZE);
 
 	//#Font settings
 	config.font.name = ConfigGetParamString(g_configVideoGliden64, "fontName");

@@ -203,7 +203,7 @@ public:
 					nFbFixedAlpha0 = 1;
 			} else if (gSP.textureTile[0]->size == G_IM_SIZ_16b && gSP.textureTile[0]->format == G_IM_FMT_IA) {
 				nFbMonochromeMode0 = 2;
-			} else if ((config.generalEmulation.hacks & hack_ZeldaMM) != 0 &&
+			} else if ((config.generalEmulation.hacks & hack_ZeldaMonochrome) != 0 &&
 					   cache.current[0]->size == G_IM_SIZ_16b &&
 					   gSP.textureTile[0]->size == G_IM_SIZ_8b &&
 					   gSP.textureTile[0]->format == G_IM_FMT_CI) {
@@ -306,6 +306,12 @@ public:
 
 	void update(bool _force) override
 	{
+		if ((gDP.otherMode.l & 0xFFFF0000) == 0x01500000) {
+			uForceBlendCycle1.set(0, _force);
+			uForceBlendCycle2.set(0, _force);
+			return;
+		}
+
 		uBlendMux1.set(gDP.otherMode.c1_m1a,
 			gDP.otherMode.c1_m1b,
 			gDP.otherMode.c1_m2a,
@@ -444,20 +450,33 @@ private:
 	iUniform uTexturePersp;
 };
 
-class UTextureFilterMode : public UniformGroup
+class UTextureFetchMode : public UniformGroup
 {
 public:
-	UTextureFilterMode(GLuint _program) {
+	UTextureFetchMode(GLuint _program) {
 		LocateUniform(uTextureFilterMode);
+		LocateUniform(uTextureFormat);
+		LocateUniform(uTextureConvert);
+		LocateUniform(uConvertParams);
 	}
 
 	void update(bool _force) override
 	{
-		uTextureFilterMode.set(gDP.otherMode.textureFilter | (gSP.objRendermode&G_OBJRM_BILERP), _force);
+		int textureFilter = gDP.otherMode.textureFilter;
+		if ((gSP.objRendermode&G_OBJRM_BILERP) != 0)
+			textureFilter |= 2;
+		uTextureFilterMode.set(textureFilter, _force);
+		uTextureFormat.set(gSP.textureTile[0]->format, gSP.textureTile[1]->format, _force);
+		uTextureConvert.set(gDP.otherMode.convert_one, _force);
+		if (gDP.otherMode.bi_lerp0 == 0 || gDP.otherMode.bi_lerp1 == 0)
+			uConvertParams.set(gDP.convert.k0, gDP.convert.k1, gDP.convert.k2, gDP.convert.k3, _force);
 	}
 
 private:
 	iUniform uTextureFilterMode;
+	iv2Uniform uTextureFormat;
+	iUniform uTextureConvert;
+	i4Uniform uConvertParams;
 };
 
 class UAlphaTestInfo : public UniformGroup
@@ -532,6 +551,7 @@ public:
 		LocateUniform(uEnableDepthUpdate);
 		LocateUniform(uDepthMode);
 		LocateUniform(uDepthSource);
+		LocateUniform(uPrimDepth);
 		LocateUniform(uDeltaZ);
 	}
 
@@ -553,8 +573,10 @@ public:
 		}
 		uDepthMode.set(gDP.otherMode.depthMode, _force);
 		uDepthSource.set(gDP.otherMode.depthSource, _force);
-		if (gDP.otherMode.depthSource == G_ZS_PRIM)
+		if (gDP.otherMode.depthSource == G_ZS_PRIM) {
 			uDeltaZ.set(gDP.primDepth.deltaZ, _force);
+			uPrimDepth.set(gDP.primDepth.z, _force);
+		}
 	}
 
 private:
@@ -563,7 +585,28 @@ private:
 	iUniform uEnableDepthUpdate;
 	iUniform uDepthMode;
 	iUniform uDepthSource;
+	fUniform uPrimDepth;
 	fUniform uDeltaZ;
+};
+
+class UDepthSource : public UniformGroup
+{
+public:
+	UDepthSource(GLuint _program) {
+		LocateUniform(uDepthSource);
+		LocateUniform(uPrimDepth);
+	}
+
+	void update(bool _force) override
+	{
+		uDepthSource.set(gDP.otherMode.depthSource, _force);
+		if (gDP.otherMode.depthSource == G_ZS_PRIM)
+			uPrimDepth.set(gDP.primDepth.z, _force);
+	}
+
+private:
+	iUniform uDepthSource;
+	fUniform uPrimDepth;
 };
 
 class URenderTarget : public UniformGroup
@@ -776,8 +819,8 @@ public:
 
 	void update(bool _force) override
 	{
-		for (s32 i = 0; i <= gSP.numLights; ++i) {
-			uLightDirection[i].set(gSP.lights.i_xyz[i], _force);
+		for (u32 i = 0; i <= gSP.numLights; ++i) {
+			uLightDirection[i].set(gSP.lights.xyz[i], _force);
 			uLightColor[i].set(gSP.lights.rgb[i], _force);
 		}
 	}
@@ -815,8 +858,8 @@ void CombinerProgramUniformFactory::buildUniforms(GLuint _program,
 			_uniforms.emplace_back(new UMipmap1(_program));
 			if (config.generalEmulation.enableLOD != 0)
 				_uniforms.emplace_back(new UMipmap2(_program));
-		} else if (config.texture.bilinearMode == BILINEAR_3POINT) {
-			_uniforms.emplace_back(new UTextureFilterMode(_program));
+		} else if (_key.getCycleType() < G_CYC_COPY) {
+			_uniforms.emplace_back(new UTextureFetchMode(_program));
 		}
 
 		_uniforms.emplace_back(new UTexturePersp(_program));
@@ -826,7 +869,6 @@ void CombinerProgramUniformFactory::buildUniforms(GLuint _program,
 
 		if (!_key.isRectKey())
 			_uniforms.emplace_back(new UTextureParams(_program, _inputs.usesTile(0), _inputs.usesTile(1)));
-
 	}
 
 	_uniforms.emplace_back(new UFog(_program));
@@ -850,6 +892,8 @@ void CombinerProgramUniformFactory::buildUniforms(GLuint _program,
 
 	if (config.frameBufferEmulation.N64DepthCompare != 0)
 		_uniforms.emplace_back(new UDepthInfo(_program));
+	else
+		_uniforms.emplace_back(new UDepthSource(_program));
 
 	if (config.generalEmulation.enableFragmentDepthWrite != 0 ||
 		config.frameBufferEmulation.N64DepthCompare != 0)

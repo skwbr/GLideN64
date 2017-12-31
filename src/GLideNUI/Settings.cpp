@@ -35,7 +35,6 @@ void _loadSettings(QSettings & settings)
 	settings.beginGroup("texture");
 	config.texture.maxAnisotropy = settings.value("maxAnisotropy", config.texture.maxAnisotropy).toInt();
 	config.texture.bilinearMode = settings.value("bilinearMode", config.texture.bilinearMode).toInt();
-	config.texture.maxBytes = settings.value("maxBytes", config.texture.maxBytes).toInt();
 	config.texture.screenShotFormat = settings.value("screenShotFormat", config.texture.screenShotFormat).toInt();
 	settings.endGroup();
 
@@ -80,6 +79,10 @@ void _loadSettings(QSettings & settings)
 	config.textureFilter.txSaveCache = settings.value("txSaveCache", config.textureFilter.txSaveCache).toInt();
 	QString txPath = QString::fromWCharArray(config.textureFilter.txPath);
 	config.textureFilter.txPath[settings.value("txPath", txPath).toString().toWCharArray(config.textureFilter.txPath)] = L'\0';
+	QString txCachePath = QString::fromWCharArray(config.textureFilter.txCachePath);
+	config.textureFilter.txCachePath[settings.value("txCachePath", txCachePath).toString().toWCharArray(config.textureFilter.txCachePath)] = L'\0';
+	QString txDumpPath = QString::fromWCharArray(config.textureFilter.txDumpPath);
+	config.textureFilter.txDumpPath[settings.value("txDumpPath", txDumpPath).toString().toWCharArray(config.textureFilter.txDumpPath)] = L'\0';
 
 	settings.endGroup();
 
@@ -158,7 +161,6 @@ void writeSettings(const QString & _strIniFolder)
 	settings.beginGroup("texture");
 	settings.setValue("maxAnisotropy", config.texture.maxAnisotropy);
 	settings.setValue("bilinearMode", config.texture.bilinearMode);
-	settings.setValue("maxBytes", config.texture.maxBytes);
 	settings.setValue("screenShotFormat", config.texture.screenShotFormat);
 	settings.endGroup();
 
@@ -201,6 +203,8 @@ void writeSettings(const QString & _strIniFolder)
 	settings.setValue("txCacheCompression", config.textureFilter.txCacheCompression);
 	settings.setValue("txSaveCache", config.textureFilter.txSaveCache);
 	settings.setValue("txPath", QString::fromWCharArray(config.textureFilter.txPath));
+	settings.setValue("txCachePath", QString::fromWCharArray(config.textureFilter.txCachePath));
+	settings.setValue("txDumpPath", QString::fromWCharArray(config.textureFilter.txDumpPath));
 	settings.endGroup();
 
 	settings.beginGroup("font");

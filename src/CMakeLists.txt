@@ -6,6 +6,7 @@ endif()
 
 option(EGL "Set to ON if targeting an EGL device" ${EGL})
 option(PANDORA "Set to ON if targeting an OpenPandora" ${PANDORA})
+option(ODROID "Set to ON if targeting an Odroid" ${ODROID})
 option(MUPENPLUSAPI "Set to ON for Mupen64Plus plugin" ${MUPENPLUSAPI})
 option(MESA "Set to ON to disable Raspberry Pi autodetection" ${MESA})
 
@@ -178,6 +179,9 @@ if(UNIX)
 	add_definitions(
 	  -DOS_MAC_OS_X
 	)
+	if (NOT CMAKE_VERSION VERSION_LESS 2.8.12)
+	  set(CMAKE_MACOSX_RPATH 0)
+	endif()
   elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	add_definitions(
 	  -DOS_LINUX
@@ -220,6 +224,12 @@ if(PANDORA)
   -DEGL
    )
 endif(PANDORA)
+
+if(ODROID)
+  add_definitions(
+  -DODROID
+   )
+endif(ODROID)
 
 if(UNIX OR BCMHOST)
   SET( FREETYPE_INCLUDE_DIRS "/usr/include/freetype2/" )
@@ -317,7 +327,9 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQ
   endif()
   SET(GCC_CPP11_COMPILE_FLAGS "-std=c++11")
   SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_CPP11_COMPILE_FLAGS}" )
-  SET(GCC_STATIC_LINK_FLAGS "-static-libgcc")
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    SET(GCC_STATIC_LINK_FLAGS "-static-libgcc")
+  endif()
   SET( CMAKE_SHARED_LINKER_FLAGS  "${CMAKE_SHARED_LINKER_FLAGS} ${GCC_STATIC_LINK_FLAGS}" )
 endif()
 

@@ -64,13 +64,20 @@ struct TextureCache
 	static TextureCache & get();
 
 private:
-	TextureCache() : m_pDummy(nullptr), m_hits(0), m_misses(0), m_maxBytes(0), m_cachedBytes(0), m_curUnpackAlignment(4), m_toggleDumpTex(false)
+	TextureCache()
+		: m_pDummy(nullptr)
+		, m_pMSDummy(nullptr)
+		, m_hits(0)
+		, m_misses(0)
+		, m_cachedBytes(0)
+		, m_curUnpackAlignment(4)
+		, m_toggleDumpTex(false)
 	{
 		current[0] = nullptr;
 		current[1] = nullptr;
 		CRC_Init();
 	}
-	TextureCache(const TextureCache &);
+	TextureCache(const TextureCache &) = delete;
 
 	void _checkCacheSize();
 	CachedTexture * _addTexture(u32 _crc32);
@@ -93,10 +100,10 @@ private:
 	CachedTexture * m_pDummy;
 	CachedTexture * m_pMSDummy;
 	u32 m_hits, m_misses;
-	u32 m_maxBytes;
 	u32 m_cachedBytes;
 	s32 m_curUnpackAlignment;
 	bool m_toggleDumpTex;
+	const size_t m_maxCacheSize = 8000;
 };
 
 void getTextureShiftScale(u32 tile, const TextureCache & cache, f32 & shiftScaleS, f32 & shiftScaleT);

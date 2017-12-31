@@ -215,6 +215,7 @@ inline u32 GetRGBA8888_RGBA4444( u64 *src, u16 x, u16 i, u8 palette )
 	return RGBA8888_RGBA4444(((u32*)src)[x^i]);
 }
 
+#if 0
 u32 YUV_RGBA8888(u8 y, u8 u, u8 v)
 {
 	s32 r = (s32)(y + (1.370705f * (v - 128)));
@@ -230,11 +231,12 @@ u32 YUV_RGBA8888(u8 y, u8 u, u8 v)
 
 	return (0xff << 24) | (b << 16) | (g << 8) | r;
 }
-
-u16 YUV_RGBA4444(u8 y, u8 u, u8 v)
+#else
+inline u32 YUV_RGBA8888(u8 y, u8 u, u8 v)
 {
-	return RGBA8888_RGBA4444(YUV_RGBA8888(y, u, v));
+	return (0xff << 24) | (y << 16) | (v << 8) | u;
 }
+#endif
 
 inline void GetYUV_RGBA8888(u64 * src, u32 * dst, u16 x)
 {
@@ -246,19 +248,6 @@ inline void GetYUV_RGBA8888(u64 * src, u32 * dst, u16 x)
 	u32 c = YUV_RGBA8888(y0, u, v);
 	*(dst++) = c;
 	c = YUV_RGBA8888(y1, u, v);
-	*(dst++) = c;
-}
-
-inline void GetYUV_RGBA4444(u64 * src, u16 * dst, u16 x)
-{
-	const u32 t = (((u32*)src)[x]);
-	u8 y1 = (u8)t & 0xFF;
-	u8 v = (u8)(t >> 8) & 0xFF;
-	u8 y0 = (u8)(t >> 16) & 0xFF;
-	u8 u = (u8)(t >> 24) & 0xFF;
-	u16 c = YUV_RGBA4444(y0, u, v);
-	*(dst++) = c;
-	c = YUV_RGBA4444(y1, u, v);
 	*(dst++) = c;
 }
 
@@ -307,7 +296,7 @@ ImageFormat::ImageFormat()
 			},
 			{ // 16-bit
 				{ GetRGBA5551_RGBA5551, datatype::UNSIGNED_SHORT_5_5_5_1, internalcolorFormat::RGB5_A1, GetRGBA5551_RGBA8888, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGB5_A1, 2, 2048 }, // RGBA
-				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA4, 2, 2048 }, // YUV
+				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA8, 2, 2048 }, // YUV
 				{ GetIA88_RGBA4444, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetIA88_RGBA8888, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA8, 2, 2048 }, // CI as IA
 				{ GetIA88_RGBA4444, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetIA88_RGBA8888, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA8, 2, 2048 }, // IA
 				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA4, 0, 2048 }, // I
@@ -338,7 +327,7 @@ ImageFormat::ImageFormat()
 			},
 			{ // 16-bit
 				{ GetCI16RGBA_RGBA5551, datatype::UNSIGNED_SHORT_5_5_5_1, internalcolorFormat::RGB5_A1, GetRGBA5551_RGBA8888, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGB5_A1, 2, 2048 }, // RGBA
-				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA4, 2, 2048 }, // YUV
+				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA8, 2, 2048 }, // YUV
 				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA4, 0, 2048 }, // CI
 				{ GetCI16RGBA_RGBA5551, datatype::UNSIGNED_SHORT_5_5_5_1, internalcolorFormat::RGB5_A1, GetCI16RGBA_RGBA8888, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGB5_A1, 2, 2048 }, // IA as CI
 				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA4, 0, 2048 }, // I
@@ -369,7 +358,7 @@ ImageFormat::ImageFormat()
 			},
 			{ // 16-bit
 				{ GetCI16RGBA_RGBA5551, datatype::UNSIGNED_SHORT_5_5_5_1, internalcolorFormat::RGB5_A1, GetRGBA5551_RGBA8888, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGB5_A1, 2, 2048 }, // RGBA
-				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA4, 2, 2048 }, // YUV
+				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA8, 2, 2048 }, // YUV
 				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA4, 0, 2048 }, // CI
 				{ GetCI16RGBA_RGBA5551, datatype::UNSIGNED_SHORT_5_5_5_1, internalcolorFormat::RGB5_A1, GetCI16RGBA_RGBA8888, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGB5_A1, 2, 2048 }, // IA as CI
 				{ GetNone, datatype::UNSIGNED_SHORT_4_4_4_4, internalcolorFormat::RGBA4, GetNone, datatype::UNSIGNED_BYTE, internalcolorFormat::RGBA8, internalcolorFormat::RGBA4, 0, 2048 }, // I
@@ -486,7 +475,6 @@ void TextureCache::_initDummyTexture(CachedTexture * _pDummy)
 
 void TextureCache::init()
 {
-	m_maxBytes = config.texture.maxBytes;
 	m_curUnpackAlignment = 0;
 
 	u32 dummyTexture[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -553,27 +541,13 @@ void TextureCache::destroy()
 
 void TextureCache::_checkCacheSize()
 {
-	const size_t maxCacheSize = 8000;
-	if (m_textures.size() >= maxCacheSize) {
+	if (m_textures.size() >= m_maxCacheSize) {
 		CachedTexture& clsTex = m_textures.back();
 		m_cachedBytes -= clsTex.textureBytes;
 		gfxContext.deleteTexture(clsTex.name);
 		m_lruTextureLocations.erase(clsTex.crc);
 		m_textures.pop_back();
 	}
-
-	if (m_cachedBytes <= m_maxBytes)
-		return;
-
-	Textures::iterator iter = m_textures.end();
-	do {
-		--iter;
-		CachedTexture& tex = *iter;
-		m_cachedBytes -= tex.textureBytes;
-		gfxContext.deleteTexture(tex.name);
-		m_lruTextureLocations.erase(tex.crc);
-	} while (m_cachedBytes > m_maxBytes && iter != m_textures.cbegin());
-	m_textures.erase(iter, m_textures.end());
 }
 
 CachedTexture * TextureCache::_addTexture(u32 _crc32)
@@ -718,7 +692,7 @@ void _calcTileSizes(u32 _t, TileSizes & _sizes, gDPTile * _pLoadTile)
 }
 
 inline
-void _updateCachedTexture(const GHQTexInfo & _info, CachedTexture *_pTexture, int _scale)
+void _updateCachedTexture(const GHQTexInfo & _info, CachedTexture *_pTexture, f32 _scale)
 {
 	_pTexture->textureBytes = _info.width * _info.height;
 
@@ -732,10 +706,16 @@ void _updateCachedTexture(const GHQTexInfo & _info, CachedTexture *_pTexture, in
 		_pTexture->textureBytes <<= 2;
 	}
 
+	if (_pTexture->realWidth == _pTexture->width * 2)
+		_pTexture->clampS = 0; // force wrap or mirror s
+	if (_pTexture->realHeight == _pTexture->height * 2)
+		_pTexture->clampT = 0; // force wrap or mirror t
+
 	_pTexture->realWidth = _info.width;
 	_pTexture->realHeight = _info.height;
-	_pTexture->scaleS = 1.0f / (f32)(_info.width / _scale);
-	_pTexture->scaleT = 1.0f / (f32)(_info.height / _scale);
+	_pTexture->scaleS = _scale / f32(_info.width);
+	_pTexture->scaleT = _scale / f32(_info.height);
+
 	_pTexture->bHDTexture = true;
 }
 
@@ -783,7 +763,7 @@ bool TextureCache::_loadHiresBackground(CachedTexture *_pTexture)
 		gfxContext.init2DTexture(params);
 
 		assert(!gfxContext.isError());
-		_updateCachedTexture(ghqTexInfo, _pTexture, ghqTexInfo.width / tile_width);
+		_updateCachedTexture(ghqTexInfo, _pTexture, f32(ghqTexInfo.width) / f32(tile_width));
 		return true;
 	}
 	return false;
@@ -822,10 +802,14 @@ void TextureCache::_loadBackground(CachedTexture *pTexture)
 	bpl = gSP.bgImage.width << gSP.bgImage.size >> 1;
 	numBytes = bpl * gSP.bgImage.height;
 	pSwapped = (u8*)malloc(numBytes);
-	assert(pSwapped != nullptr);
+	if (pSwapped == nullptr)
+		return;
 	UnswapCopyWrap(RDRAM, gSP.bgImage.address, pSwapped, 0, RDRAMSize, numBytes);
 	pDest = (u32*)malloc(pTexture->textureBytes);
-	assert(pDest != nullptr);
+	if (pDest == nullptr) {
+		free(pSwapped);
+		return;
+	}
 
 	clampSClamp = pTexture->width - 1;
 	clampTClamp = pTexture->height - 1;
@@ -879,7 +863,7 @@ void TextureCache::_loadBackground(CachedTexture *pTexture)
 			params.dataType = DatatypeParam(ghqTexInfo.pixel_type);
 			params.data = ghqTexInfo.data;
 			gfxContext.init2DTexture(params);
-			_updateCachedTexture(ghqTexInfo, pTexture, ghqTexInfo.width / pTexture->realWidth);
+			_updateCachedTexture(ghqTexInfo, pTexture, f32(ghqTexInfo.width) / f32(pTexture->realWidth));
 			bLoaded = true;
 		}
 	}
@@ -912,21 +896,36 @@ bool TextureCache::_loadHiresTexture(u32 _tile, CachedTexture *_pTexture, u64 & 
 	gDPLoadTileInfo & info = gDP.loadInfo[_pTexture->tMem];
 
 	int bpl;
+	int width, height;
 	u8 * addr = (u8*)(RDRAM + info.texAddress);
-	int tile_width = _pTexture->width;
-	int tile_height = _pTexture->height;
 	if (info.loadType == LOADTYPE_TILE) {
 		bpl = info.texWidth << info.size >> 1;
 		addr += (info.ult * bpl) + (((info.uls << info.size) + 1) >> 1);
 
-		tile_width = min(info.width, info.texWidth);
+		width = min(info.width, info.texWidth);
 		if (info.size > _pTexture->size)
-			tile_width <<= info.size - _pTexture->size;
+			width <<= info.size - _pTexture->size;
 
-		tile_height = info.height;
-		if ((config.generalEmulation.hacks & hack_MK64) != 0 && (tile_height % 2) != 0)
-			tile_height--;
+		height = info.height;
+		if ((config.generalEmulation.hacks & hack_MK64) != 0 && (height % 2) != 0)
+			height--;
 	} else {
+		int tile_width = gDP.tiles[_tile].lrs - gDP.tiles[_tile].uls + 1;
+		int tile_height = gDP.tiles[_tile].lrt - gDP.tiles[_tile].ult + 1;
+
+		int mask_width = (gDP.tiles[_tile].masks == 0) ? (tile_width) : (1 << gDP.tiles[_tile].masks);
+		int mask_height = (gDP.tiles[_tile].maskt == 0) ? (tile_height) : (1 << gDP.tiles[_tile].maskt);
+
+		if ((gDP.tiles[_tile].clamps && tile_width <= 256))
+			width = min(mask_width, tile_width);
+		else
+			width = mask_width;
+
+		if ((gDP.tiles[_tile].clampt && tile_height <= 256) || (mask_height > 256))
+			height = min(mask_height, tile_height);
+		else
+			height = mask_height;
+
 		if (gSP.textureTile[_tile]->size == G_IM_SIZ_32b)
 			bpl = gSP.textureTile[_tile]->line << 4;
 		else if (info.dxt == 0)
@@ -952,7 +951,7 @@ bool TextureCache::_loadHiresTexture(u32 _tile, CachedTexture *_pTexture, u64 & 
 		//			palette = (rdp.pal_8 + (gSP.textureTile[_t]->palette << 4));
 	}
 
-	_ricecrc = txfilter_checksum(addr, tile_width, tile_height, (unsigned short)(_pTexture->format << 8 | _pTexture->size), bpl, paladdr);
+	_ricecrc = txfilter_checksum(addr, width, height, (unsigned short)(_pTexture->format << 8 | _pTexture->size), bpl, paladdr);
 	GHQTexInfo ghqTexInfo;
 	// TODO: fix problem with zero texture dimensions on GLideNHQ side.
 	if (txfilter_hirestex(_pTexture->crc, _ricecrc, palette, &ghqTexInfo) &&
@@ -968,9 +967,10 @@ bool TextureCache::_loadHiresTexture(u32 _tile, CachedTexture *_pTexture, u64 & 
 		params.format = ColorFormatParam(ghqTexInfo.texture_format);
 		params.dataType = DatatypeParam(ghqTexInfo.pixel_type);
 		params.data = ghqTexInfo.data;
+		params.textureUnitIndex = textureIndices::Tex[_tile];
 		gfxContext.init2DTexture(params);
 		assert(!gfxContext.isError());
-		_updateCachedTexture(ghqTexInfo, _pTexture, ghqTexInfo.width / tile_width);
+		_updateCachedTexture(ghqTexInfo, _pTexture, f32(ghqTexInfo.width) / f32(width));
 		return true;
 	}
 
@@ -1076,11 +1076,7 @@ void TextureCache::_getTextureDestData(CachedTexture& tmptex,
 		for (y = 0; y < tmptex.realHeight; ++y) {
 			pSrc = &TMEM[tmptex.tMem] + *pLine * y;
 			for (x = 0; x < tmptex.realWidth / 2; x++) {
-				if (glInternalFormat == internalcolorFormat::RGBA8) {
-					GetYUV_RGBA8888(pSrc, pDest + j, x);
-				} else {
-					GetYUV_RGBA4444(pSrc, (u16*)pDest + j, x);
-				}
+				GetYUV_RGBA8888(pSrc, pDest + j, x);
 				j += 2;
 			}
 		}
@@ -1207,7 +1203,7 @@ void TextureCache::_load(u32 _tile, CachedTexture *_pTexture)
 				params.dataType = DatatypeParam(ghqTexInfo.pixel_type);
 				params.data = ghqTexInfo.data;
 				gfxContext.init2DTexture(params);
-				_updateCachedTexture(ghqTexInfo, _pTexture, ghqTexInfo.width / tmptex.realWidth);
+				_updateCachedTexture(ghqTexInfo, _pTexture, f32(ghqTexInfo.width) / f32(tmptex.realWidth));
 				bLoaded = true;
 			}
 		}
@@ -1268,16 +1264,19 @@ struct TextureParams
 static
 u32 _calculateCRC(u32 _t, const TextureParams & _params, u32 _bytes)
 {
+	const bool rgba32 = gSP.textureTile[_t]->size == G_IM_SIZ_32b;
 	if (_bytes == 0) {
 		const u32 lineBytes = gSP.textureTile[_t]->line << 3;
 		_bytes = _params.height*lineBytes;
 	}
-	const u32 tMemMask = gDP.otherMode.textureLUT == G_TT_NONE ? 0x1FF : 0xFF;
+	if (rgba32)
+		_bytes >>= 1;
+	const u32 tMemMask = (gDP.otherMode.textureLUT == G_TT_NONE && !rgba32) ? 0x1FF : 0xFF;
 	const u64 *src = (u64*)&TMEM[gSP.textureTile[_t]->tmem & tMemMask];
 	u32 crc = 0xFFFFFFFF;
 	crc = CRC_Calculate(crc, src, _bytes);
 
-	if (gSP.textureTile[_t]->size == G_IM_SIZ_32b) {
+	if (rgba32) {
 		src = (u64*)&TMEM[gSP.textureTile[_t]->tmem + 256];
 		crc = CRC_Calculate(crc, src, _bytes);
 	}
@@ -1311,38 +1310,21 @@ void TextureCache::activateTexture(u32 _t, CachedTexture *_pTexture)
 		const s32 texLevel = bUseLOD ? _pTexture->max_level : 0;
 		params.maxMipmapLevel = Parameter(texLevel);
 
-		if (config.texture.bilinearMode == BILINEAR_STANDARD) {
+		if (texLevel > 0) { // Apply standard bilinear to mipmap textures
 			if (bUseBilinear) {
-				if (texLevel > 0)
-					params.minFilter = textureParameters::FILTER_LINEAR_MIPMAP_NEAREST;
-				else
-					params.minFilter = textureParameters::FILTER_LINEAR;
+				params.minFilter = textureParameters::FILTER_LINEAR_MIPMAP_NEAREST;
 				params.magFilter = textureParameters::FILTER_LINEAR;
 			} else {
-				if (texLevel > 0)
-					params.minFilter = textureParameters::FILTER_NEAREST_MIPMAP_NEAREST;
-				else
-					params.minFilter = textureParameters::FILTER_NEAREST;
+				params.minFilter = textureParameters::FILTER_NEAREST_MIPMAP_NEAREST;
 				params.magFilter = textureParameters::FILTER_NEAREST;
 			}
-		} else { // 3 point filter
-			if (texLevel > 0) { // Apply standard bilinear to mipmap textures
-				if (bUseBilinear) {
-					params.minFilter = textureParameters::FILTER_LINEAR_MIPMAP_NEAREST;
-					params.magFilter = textureParameters::FILTER_LINEAR;
-				} else {
-					params.minFilter = textureParameters::FILTER_NEAREST_MIPMAP_NEAREST;
-					params.magFilter = textureParameters::FILTER_NEAREST;
-				}
-			} else if (bUseBilinear && config.generalEmulation.enableLOD != 0 && bUseLOD) { // Apply standard bilinear to first tile of mipmap texture
-				params.minFilter = textureParameters::FILTER_LINEAR;
-				params.magFilter = textureParameters::FILTER_LINEAR;
-			} else { // Don't use texture filter. Texture will be filtered by 3 point filter shader
-				params.minFilter = textureParameters::FILTER_NEAREST;
-				params.magFilter = textureParameters::FILTER_NEAREST;
-			}
+		} else if (bUseBilinear && config.generalEmulation.enableLOD != 0 && bUseLOD) { // Apply standard bilinear to first tile of mipmap texture
+			params.minFilter = textureParameters::FILTER_LINEAR;
+			params.magFilter = textureParameters::FILTER_LINEAR;
+		} else { // Don't use texture filter. Texture will be filtered by filter shader
+			params.minFilter = textureParameters::FILTER_NEAREST;
+			params.magFilter = textureParameters::FILTER_NEAREST;
 		}
-
 
 		// Set clamping modes
 		params.wrapS = _pTexture->clampS ? textureParameters::WRAP_CLAMP_TO_EDGE :
@@ -1401,15 +1383,15 @@ void TextureCache::_updateBackground()
 	Texture_Locations::iterator locations_iter = m_lruTextureLocations.find(crc);
 	if (locations_iter != m_lruTextureLocations.end()) {
 		Textures::iterator iter = locations_iter->second;
-		CachedTexture & current = *iter;
+		CachedTexture & currentTex = *iter;
 		m_textures.splice(m_textures.begin(), m_textures, iter);
 
-		assert(current.width == gSP.bgImage.width);
-		assert(current.height == gSP.bgImage.height);
-		assert(current.format == gSP.bgImage.format);
-		assert(current.size == gSP.bgImage.size);
+		assert(currentTex.width == gSP.bgImage.width);
+		assert(currentTex.height == gSP.bgImage.height);
+		assert(currentTex.format == gSP.bgImage.format);
+		assert(currentTex.size == gSP.bgImage.size);
 
-		activateTexture(0, &current);
+		activateTexture(0, &currentTex);
 		m_hits++;
 		return;
 	}
@@ -1509,8 +1491,10 @@ void TextureCache::update(u32 _t)
 
 	if (gDP.otherMode.textureLOD == G_TL_LOD && gSP.texture.level == 0 && !currentCombiner()->usesLOD() && _t == 1) {
 		current[1] = current[0];
-		activateTexture(_t, current[_t]);
-		return;
+		if (current[1] != nullptr) {
+			activateTexture(1, current[1]);
+			return;
+		}
 	}
 
 	if (gSP.texture.tile == 7 &&
@@ -1547,21 +1531,21 @@ void TextureCache::update(u32 _t)
 	Texture_Locations::iterator locations_iter = m_lruTextureLocations.find(crc);
 	if (locations_iter != m_lruTextureLocations.end()) {
 		Textures::iterator iter = locations_iter->second;
-		CachedTexture & current = *iter;
+		CachedTexture & currentTex = *iter;
 
-		if (current.width == sizes.width && current.height == sizes.height) {
+		if (currentTex.width == sizes.width && currentTex.height == sizes.height) {
 			m_textures.splice(m_textures.begin(), m_textures, iter);
 
-			assert(current.format == pTile->format);
-			assert(current.size == pTile->size);
+			assert(currentTex.format == pTile->format);
+			assert(currentTex.size == pTile->size);
 
-			activateTexture(_t, &current);
+			activateTexture(_t, &currentTex);
 			m_hits++;
 			return;
 		}
 
-		m_cachedBytes -= current.textureBytes;
-		gfxContext.deleteTexture(current.name);
+		m_cachedBytes -= currentTex.textureBytes;
+		gfxContext.deleteTexture(currentTex.name);
 		m_lruTextureLocations.erase(locations_iter);
 		m_textures.erase(iter);
 	}

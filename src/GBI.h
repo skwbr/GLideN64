@@ -23,9 +23,10 @@
 #define Turbo3D			14
 #define ZSortp			15
 #define F3DSETA			16
-#define F3DZEX2			17
-#define F3DTEXA			18
-#define T3DUX			19
+#define F3DZEX2OOT		17
+#define F3DZEX2MM		18
+#define F3DTEXA			19
+#define T3DUX			20
 #define F3DEX2ACCLAIM	21
 #define F3DAM			22
 #define F3DSWRS			23
@@ -52,6 +53,13 @@
 
 #define _FIXED2FLOAT( v, b ) \
 	((f32)v * FIXED2FLOATRECIP##b)
+
+#define FIXED2FLOATRECIPCOLOR7	0.00787401572f
+#define FIXED2FLOATRECIPCOLOR8	0.00392156886f
+
+#define _FIXED2FLOATCOLOR( v, b ) \
+	((f32)v * FIXED2FLOATRECIPCOLOR##b)
+
 
 // Useful macros for decoding GBI command's parameters
 #define _SHIFTL( v, s, w )	\
@@ -515,6 +523,7 @@ struct GBIInfo
 	void loadMicrocode(u32 uc_start, u32 uc_dstart, u16 uc_dsize);
 	u32 getMicrocodeType() const {return m_pCurrent != nullptr ? m_pCurrent->type : NONE;}
 	bool isHWLSupported() const;
+	void setHWLSupported(bool _supported);
 	bool isNoN() const { return m_pCurrent != nullptr ? m_pCurrent->NoN : false; }
 	bool isNegativeY() const { return m_pCurrent != nullptr ? m_pCurrent->negativeY : true; }
 	bool isTexturePersp() const { return m_pCurrent != nullptr ? m_pCurrent->texturePersp: true; }
@@ -526,6 +535,7 @@ private:
 	void _makeCurrent(MicrocodeInfo * _pCurrent);
 	bool _makeExistingMicrocodeCurrent(u32 uc_start, u32 uc_dstart, u32 uc_dsize);
 
+	bool m_hwlSupported;
 	MicrocodeInfo * m_pCurrent;
 
 	typedef std::list<MicrocodeInfo> Microcodes;

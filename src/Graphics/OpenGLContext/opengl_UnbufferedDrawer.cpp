@@ -69,7 +69,7 @@ void UnbufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParame
 			glVertexAttribPointer(triangleAttrib::modify, 4, GL_BYTE, GL_FALSE, sizeof(SPVertex), ptr);
 	}
 
-	if (config.generalEmulation.enableHWLighting != 0)
+	if (isHWLightingAllowed())
 		glVertexAttrib1f(triangleAttrib::numlights, GLfloat(_params.vertices[0].HWLight));
 
 	m_cachedAttribArray->enableVertexAttribArray(rectAttrib::position, false);
@@ -87,7 +87,7 @@ void UnbufferedDrawer::drawTriangles(const graphics::Context::DrawTriangleParame
 	}
 
 	// Draw polygons one by one
-	for (GLint i = 0; i < _params.elementsCount; i += 3) {
+	for (GLuint i = 0; i < _params.elementsCount; i += 3) {
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		glDrawElements(GLenum(_params.mode), 3, GL_UNSIGNED_BYTE, (u8*)_params.elements + i);
 	}

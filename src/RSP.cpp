@@ -126,6 +126,7 @@ void RSP_ProcessDList()
 		gSP.matrix.modelViewi = 0;
 		gSP.status[0] = gSP.status[1] = gSP.status[2] = gSP.status[3] = 0;
 		gSP.changed |= CHANGED_MATRIX | CHANGED_LIGHT | CHANGED_LOOKAT;
+		gSP.tri_num = 0;
 		gDP.changed &= ~CHANGED_CPU_FB_WRITE;
 		gDPSetTexturePersp(G_TP_PERSP);
 
@@ -209,6 +210,7 @@ void RSP_SetDefaultState()
 	gSP.matrix.modelView[0][3][3] = 1.0f;
 
 	gDP.otherMode._u64 = 0U;
+	gDP.otherMode.bi_lerp0 = gDP.otherMode.bi_lerp1 = 1;
 }
 
 u32 DepthClearColor = 0xfffcfffc;
@@ -275,6 +277,8 @@ void RSP_Init()
 		config.generalEmulation.hacks |= hack_noDepthFrameBuffers;
 	else if (strstr(RSP.romname, (const char *)"ROADSTERS TROPHY") != nullptr)
 		config.generalEmulation.hacks |= hack_noDepthFrameBuffers;
+	else if (strstr(RSP.romname, (const char *)"VIGILANTE 8") != nullptr)
+		config.generalEmulation.hacks |= hack_noDepthFrameBuffers;
 	else if (strstr(RSP.romname, (const char *)"CONKER BFD") != nullptr)
 		config.generalEmulation.hacks |= hack_blurPauseScreen | hack_rectDepthBufferCopyCBFD;
 	else if (strstr(RSP.romname, (const char *)"MICKEY USA") != nullptr)
@@ -286,8 +290,9 @@ void RSP_Init()
 	else if (strstr(RSP.romname, (const char *)"POKEMON STADIUM 2") != nullptr)
 		config.generalEmulation.hacks |= hack_texrect_shade_alpha;
 	else if (strstr(RSP.romname, (const char *)"THE LEGEND OF ZELDA") != nullptr ||
-			 strstr(RSP.romname, (const char *)"ZELDA MASTER QUEST") != nullptr ||
-			 strstr(RSP.romname, (const char *)"DOUBUTSUNOMORI") != nullptr ||
+			 strstr(RSP.romname, (const char *)"ZELDA MASTER QUEST") != nullptr)
+		 config.generalEmulation.hacks |= hack_subscreen | hack_ZeldaMonochrome;
+	else if (strstr(RSP.romname, (const char *)"DOUBUTSUNOMORI") != nullptr ||
 			 strstr(RSP.romname, (const char *)"ANIMAL FOREST") != nullptr)
 		config.generalEmulation.hacks |= hack_subscreen;
 	else if (strstr(RSP.romname, (const char *)"LEGORacers") != nullptr)
@@ -295,15 +300,16 @@ void RSP_Init()
 	else if (strstr(RSP.romname, (const char *)"Blast") != nullptr)
 		config.generalEmulation.hacks |= hack_blastCorps;
 	else if (strstr(RSP.romname, (const char *)"MASK") != nullptr) // Zelda MM
-		config.generalEmulation.hacks |= hack_ZeldaMM;
+		config.generalEmulation.hacks |= hack_ZeldaMonochrome | hack_ZeldaMM;
 	else if (strstr(RSP.romname, (const char *)"Perfect Dark") != nullptr ||
 			 strstr(RSP.romname, (const char *)"PERFECT DARK") != nullptr)
 		config.generalEmulation.hacks |= hack_rectDepthBufferCopyPD;
 	else if (strstr(RSP.romname, (const char *)"Jeremy McGrath Super") != nullptr)
 		config.generalEmulation.hacks |= hack_ModifyVertexXyInShader;
-	else if (strstr(RSP.romname, (const char *)"Quake") != nullptr ||
-			 strstr(RSP.romname, (const char *)"QUAKE II") != nullptr)
-		config.generalEmulation.hacks |= hack_doNotResetTLUTmode;
+	else if (strstr(RSP.romname, (const char *)"Quake") != nullptr)
+		config.generalEmulation.hacks |= hack_doNotResetOtherModeH|hack_doNotResetOtherModeL;
+	else if (strstr(RSP.romname, (const char *)"QUAKE II") != nullptr)
+		config.generalEmulation.hacks |= hack_doNotResetOtherModeH;
 	else if (strstr(RSP.romname, (const char *)"quarterback_club_98") != nullptr)
 		config.generalEmulation.hacks |= hack_LoadDepthTextures;
 	else if (strstr(RSP.romname, (const char *)"WIN BACK") != nullptr ||
