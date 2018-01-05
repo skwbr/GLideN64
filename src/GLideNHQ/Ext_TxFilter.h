@@ -51,8 +51,8 @@ typedef unsigned __int64 uint64;
 #else
 typedef long long int64;
 typedef unsigned long long uint64;
-typedef unsigned char boolean;
 #endif
+typedef unsigned char boolean;
 
 #define NO_OPTIONS          0x00000000
 
